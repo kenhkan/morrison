@@ -33,7 +33,7 @@ sense that it:
   build, deploy, AND monitor an FBP program. The program in the "backend" emits
   IP and debugging information so that the frontend can show the program
   running in real-time.
-- Single machine assumption: parallelism is to best tackled at a different
+- Single machine assumption: parallelism is best tackled at a different
   level. Morrison is only concerned with coordination in a single machine.
 
 ### Differences with classical FBP (cFBP)
@@ -102,5 +102,5 @@ since sliced bread.
 
 ## References
 
-[1] Morrison, J. Paul  (2011-02-26). Flow-Based Programming - 2nd Edition (p. 30)
-[2] Morrison, J. Paul  (2011-02-26). Flow-Based Programming - 2nd Edition (p. 268)
+1. Morrison, J. Paul  (2011-02-26). Flow-Based Programming - 2nd Edition (p. 30)
+2. Morrison, J. Paul  (2011-02-26). Flow-Based Programming - 2nd Edition (p. 268)
