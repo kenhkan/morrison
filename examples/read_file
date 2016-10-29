@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+# Provide the file name on fd/0 and the content is read to fd/1.
+#
+# This is an example of a wrapper around a native program.
+
+FILE_NAME="$(head -n 1 /dev/fd/0)"
+
+cat $FILE_NAME

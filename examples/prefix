@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+# Prefix all lines from fd/0 with the content from fd/3 and print to fd/1.
+#
+# This is an example of a wrapper around a user program.
+
+SELF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+PREFIX="$(head -n 1 /dev/fd/3)"
+
+export PREFIX
+
+$SELF_DIR/prefix.rb

@@ -1,0 +1,18 @@
+#!/usr/bin/env python
+
+# Merge the input from fd/3, fd/4, and fd/5, in that order, and print to fd/1.
+#
+# This is an example of a program inside a wrapper that does not require
+# remapping of I/O to parameters and envariable variables.
+
+import os, sys
+
+fds = [3, 4, 5]
+
+for fd in fds:
+  inp = open("/dev/fd/" + str(fd), "r")
+
+  with inp as lines:
+    sys.stderr.write("Printing from fd/#%(fd)s...\n" % locals())
+    for line in lines:
+      sys.stdout.write(line)

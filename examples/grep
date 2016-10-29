@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# Search with grep for the content of the first line from fd/3 and print to
+# fd/1.
+#
+# This is an example of a wrapper around a native program.
+
+SEARCH_TERM="$(head -n 1 /dev/fd/3)"
+
+grep $SEARCH_TERM
