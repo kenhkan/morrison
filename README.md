@@ -315,6 +315,37 @@ Input and output ports have distinct namespaces, and there is no restriction on
 the port name; it may be cAmElCaSe or even contain symbols! Morrison compiles
 ports into numeric values (just Unix file descriptors) for execution.
 
+### Connecting the component to Morrison
+
+We have talked about specifying to Morrison how to fetch the component and what
+ports does the component expect. The last piece is to specify how Morrison can
+put the component into action! It needs four things:
+
+1. How to run the program that runs inside the component?
+2. What environment variables does the program expect?
+3. What parameters does it expect?
+4. What I/O streams does it expect?
+
+#### The specification
+
+```yaml
+wrapper:
+  path: <path to program>
+  environment variables: <an associative array of case insensitive names to case sensitive names>
+  parameters: <an array of case insensitive names>
+  input streams: <an array of case insensitive names>
+  output streams: <an array of case insensitive names>
+```
+
+The section is called `wrapper` because a component is basically a wrapper
+around a normal Unix program. These attributes tell Morrison how to connect the
+pieces so that the program would run correctly.
+
+In the environment variables attribute, the keys are case insensitive just like
+parameters and streams, but the values are case sensitive so that the wrapper
+can correctly specify the environment variables that the underlying program
+expects.
+
 ## Glossary
 
 Morrison tries to adhere to cFBP as closely as possible, so the vocabulary used
