@@ -239,32 +239,32 @@ sends its data. It requires a `ports` section in the component manifest!
 ports:
   input:
     oneInportName:
-      type: flat-grouping
+      delimiterType: flat-grouping
       # CSV delimitering
       packetClose: [44] # Comma
       bracketOpen: []
       bracketClose: [10] # Newline
     another_inport_name:
-      type: hierarchical-grouping
+      delimiterType: hierarchical-grouping
       # Parenthesized list
       packetClose: [44] # Comma
       bracketOpen: [40] # Open parenthesis
       bracketClose: [41] # Close parenthesis
     Yet another inport name:
-      type: no-grouping
+      delimiterType: no-grouping
       # CSV without bracket, i.e. a single-line CSV
       packetClose: [44] # Comma
       bracketOpen: []
       bracketClose: []
   output:
     AnOutportName:
-      type: flat-grouping
+      delimiterType: flat-grouping
       # Multi-byte delimiters
       packetClose: [255, 12] # East Asian character comma in UTF-16
       bracketOpen: []
       bracketClose: [48, 2] # East Asian character period in UTF-16
     aNoThErOuTpOrTnAmE:
-      type: single-packet
+      delimiterType: single-packet
       # No delimitering, i.e. a single-packet connection
       packetClose: []
       bracketOpen: []
