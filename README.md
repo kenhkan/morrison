@@ -204,6 +204,44 @@ When there are components with conflicting required libraries, Morrison would
 not compile a network if a check from one of the conflicting components return
 a non-zero status code.
 
+## Glossary
+
+Morrison tries to adhere to cFBP as closely as possible, so the vocabulary used
+is almost identical as well.
+
+Component | A black box that runs some logic and honors a number of in-ports
+and out-ports. The only way to communicate with the internal logic in a network
+is through the ports.
+Port | An abstraction that takes some input or some output. Conceptually
+similar to TCP ports, except that FBP ports are by name.
+Connection | Two ports are connected by a connection.
+IP | Information Packet: A unit of datum that gets transmitted over a
+connection at a time and has a lifetime of its own.
+Network | A network of components connected together to run some logic and
+honors a number of in-ports and out-ports. A network is also a component.
+Subnet | A network. The term is used to distinguish it being part of a larger
+network.
+Elementary component | A component that is not a network.
+Composite component | A network. The term is used to distinguish between
+elementary components that are code and composite components that are networks.
+Also simply referred to as a "composite".
+Substream sensitivitiy | A network designer may set a port as "substream
+sensitive" so that a substream going through that port is treated as a stream.
+That is, when there is a closing bracket coming from "outside" of the network,
+the stream is closed "inside" the network.
+Array port | An array port is a normal port but supports multiple incoming
+connections (for in-ports) or multiple outgoing connections (for out-ports).
+Each sub-port in an array port is a distinct and independent port from the
+other (sub-)ports.
+IIP | Initial information packet
+Automatic port | Ports that are not part of the component definition but are
+automatically available for each component as part of the FBP convention. An
+automatic port is used to transmit signals like shutting down or delayed start
+of a process.
+
+For more FBP definitions, see the [FBP
+Glossary](http://www.jpaulmorrison.com/fbp/gloss.htm).
+
 ## References
 
 1. Morrison, J. Paul (2011-02-26). Flow-Based Programming - 2nd Edition (p. 30)
