@@ -138,6 +138,72 @@ A software engineer who just wants to get stuff done and doesn't want to worry
 about maintenance. Managed service in the cloud is the best thing since sliced
 bread.
 
+## Component specification
+
+Each component requires a manifest file so that Morrison knows how to deal with
+it. This section is split into several sections for ease of consumption but
+they all fall in one manifest file in practice.
+
+The format of the manifest file is [YAML](http://yaml.org/) for its maturity,
+human-friendliness, and support for comments.
+
+### Sourcing
+
+A component is built and deployed from some source. A component's sourcing
+manifest specifies where and how to build the component.
+
+```
+source:
+  protocol: git|http
+  url: <url-to-archive>
+  format: git|tar|tgz|zip
+  # Current Working Directory
+  cwd: <path-to-a-sub-directory-in-the-archive-to-build-from>
+  build: <command-to-run-to-build>
+  check:
+    <path-to-a-required-library>: <path-to-a-script-to-check-the-library>
+    <path-to-another-library>: <path-to-another-script>
+    <path-to-a-command>: <path-to-yet-another-script-to-check-the-command>
+  deploy:
+    - list/of/files
+    - and/directories/
+    - relative/to/cwd/as/defined/above
+    - to/deploy/after/build
+    - wildcard/*/is/accepted
+```
+
+Note that if any of the `build` command or the `check` scripts return a
+non-zero status code, the build and deployment process would abort.
+
+#### Checks
+
+The `check` section is critical. In an ideal world where every component runs
+code inside its own boundaries, everything is rosy. In practice, a component
+most likely uses a library installed on the system on which it runs, or it
+calls a command available.
+
+Checks are specified to ensure that these libraries and commands are available
+and are the correct ones as expected by a component. In addition, if two
+components in a network use the same system library/command but expect two
+different versions, Morrison would not compile the network.
+
+The question becomes: how does Morrison know which version does each
+conflicting component need? The answer is: it doesn't. There is no universal
+way to track version. Some prefer hashes; some prefer semantic versioning; and
+some prefer proprietary protocols. Worse yet, even in a single formalized
+versioning scheme, say semantic versioning, what constitutes as a
+backward-compatible version is not universally practiced or even agreed upon.
+
+Morrison does not care about the versioning of the component because the
+assumption is meaningless given the current practice on versioning. Instead,
+Morrison depends on the component developer to specify how to check whether a
+system library is what the component needs. After all, the component developer
+knows everything that the component uses.
+
+When there are components with conflicting required libraries, Morrison would
+not compile a network if a check from one of the conflicting components return
+a non-zero status code.
+
 ## References
 
 1. Morrison, J. Paul (2011-02-26). Flow-Based Programming - 2nd Edition (p. 30)
