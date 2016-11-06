@@ -342,6 +342,47 @@ parameters and streams, but the values are case sensitive so that the wrapper
 can correctly specify the environment variables that the underlying program
 expects.
 
+### Composite component specification
+
+If the component is a network, Morrison needs three things:
+
+1. What sub-components are used?
+2. Which ports of each sub-component is used and where are they attached to?
+3. Coordinates of each sub-component relative to other sub-components so that
+   they can be shown on a page as a network.
+
+#### The specification
+
+```yaml
+composite:
+  processes:
+    <name of one process in this network>:
+      source:
+        type: local|registry|private
+        path: <path to a component manifest on the local filesystem>
+        name: <a component name in the registry>
+        url: <URL to a private component manifest>
+      coordinates:
+        x: <x coordinate of the component in this network>
+        y: <y coordinate of the component in this network>
+      input:
+        <name of one input port>:
+          connected-process: <name of the connected process>
+          connected-port: <name of connected port>
+        <... more input port definitions ...>
+      output:
+        <... more output port definitions ...>
+    <... more component definitions ...>
+```
+
+We use the term "processes" to refer to instances of components. As each
+network may contain the same component used in different ways, each of those
+component instances is a process.
+
+The name of a process in this network (i.e. the key of the `processes`
+associative array) is an arbitrary name for this particular instance. It is
+required so that we can specify to which process a port is connected.
+
 ## Glossary
 
 Morrison tries to adhere to cFBP as closely as possible, so the vocabulary used
