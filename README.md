@@ -18,6 +18,10 @@ toolchain in the sense that it:
 - exposes a frontend UI that allows inspection of the network in real-time.
   i.e. A manager can see IPs traveling through the network while it is running.
 
+If you are only interested in how to create components (both elementary and
+composite), go to the [Component specification](#component-specification)
+section.
+
 ## Philosophy
 
 ### Goals and non-goals
@@ -238,37 +242,37 @@ sends its data. It requires a `ports` section in the component manifest!
 ```yaml
 ports:
   input:
-    oneInportName:
-      delimiterType: flat-grouping
+    one inport name:
+      delimiter type: flat-grouping
       # CSV delimitering
-      packetClose: [44] # Comma
-      bracketOpen: []
-      bracketClose: [10] # Newline
-    another_inport_name:
-      delimiterType: hierarchical-grouping
+      close packet: [44] # Comma
+      open bracket: []
+      close bracket: [10] # Newline
+    another inport name:
+      delimiter type: hierarchical-grouping
       # Parenthesized list
-      packetClose: [44] # Comma
-      bracketOpen: [40] # Open parenthesis
-      bracketClose: [41] # Close parenthesis
-    Yet another inport name:
-      delimiterType: no-grouping
+      close packet: [44] # Comma
+      open bracket: [40] # Open parenthesis
+      close bracket: [41] # Close parenthesis
+    yet another inport name:
+      delimiter type: no-grouping
       # CSV without bracket, i.e. a single-line CSV
-      packetClose: [44] # Comma
-      bracketOpen: []
-      bracketClose: []
+      close packet: [44] # Comma
+      open bracket: []
+      close bracket: []
   output:
-    AnOutportName:
-      delimiterType: flat-grouping
+    an outport name:
+      delimiter type: flat-grouping
       # Multi-byte delimiters
-      packetClose: [255, 12] # East Asian character comma in UTF-16
-      bracketOpen: []
-      bracketClose: [48, 2] # East Asian character period in UTF-16
-    aNoThErOuTpOrTnAmE:
-      delimiterType: single-packet
+      close packet: [255, 12] # East Asian character comma in UTF-16
+      open bracket: []
+      close bracket: [48, 2] # East Asian character period in UTF-16
+    another outport name:
+      delimiter type: single-packet
       # No delimitering, i.e. a single-packet connection
-      packetClose: []
-      bracketOpen: []
-      bracketClose: []
+      close packet: []
+      open bracket: []
+      close bracket: []
 ```
 
 Each port corresponds to a set of delimiter definitions: its delimitering type,
@@ -306,14 +310,15 @@ Morrison to provide a way to automagically convert every format to every other
 format. It provides these delimitering options to ease integration as long as
 the components delimit their input/output unambiguously.
 
-There is a `packetClose` but not a `packetOpen`. Morrison assumes that all data
+There is a `close packet` but not a `open packet`. Morrison assumes that all data
 in a connection to be well-formed. And so once a packet has closed, a bracket
 has closed, or the connection has just been opened, it assumes that the
 upcoming data is part of a packet.
 
 Input and output ports have distinct namespaces, and there is no restriction on
-the port name; it may be cAmElCaSe or even contain symbols! Morrison compiles
-ports into numeric values (just Unix file descriptors) for execution.
+the port name; it may be "normal name", "cAmElCaSe", or even contain symbols!
+Morrison compiles ports into numeric values (just Unix file descriptors) for
+execution.
 
 ### Elementary component specification
 
@@ -367,8 +372,8 @@ composite:
         y: <y coordinate of the component in this network>
       input:
         <name of one input port>:
-          connected-process: <name of the connected process>
-          connected-port: <name of connected port>
+          connected process: <name of the connected process>
+          connected port: <name of connected port>
         <... more input port definitions ...>
       output:
         <... more output port definitions ...>
