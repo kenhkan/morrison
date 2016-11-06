@@ -375,9 +375,9 @@ composite:
     <... more component definitions ...>
 ```
 
-We use the term "processes" to refer to instances of components. As each
-network may contain the same component used in different ways, each of those
-component instances is a process.
+We use the term "processes" to refer to instances of components. As a network
+may contain the same component used in different ways, each of those component
+instances is a process.
 
 The name of a process in this network (i.e. the key of the `processes`
 associative array) is an arbitrary name for this particular instance. It is
@@ -388,12 +388,15 @@ required so that we can specify to which process a port is connected.
 Morrison tries to adhere to cFBP as closely as possible, so the vocabulary used
 is almost identical as well.
 
-Component | A black box that runs some logic and honors a number of in-ports
+| Name | Description |
+| --- | --- |
+| Component | A black box that runs some logic and honors a number of in-ports
 and out-ports. The only way to communicate with the internal logic in a network
-is through the ports.
-Port | An abstraction that takes some input or some output. Conceptually
-similar to TCP ports, except that FBP ports are by name.
-Connection | Two ports are connected by a connection.
+is through the ports. |
+| Port | An abstraction that takes some input or some output. Conceptually
+similar to TCP ports, except that FBP ports are by name. |
+| Connection | Two ports are connected by a connection. |
+
 IP | Information Packet: A unit of datum that gets transmitted over a
 connection at a time and has a lifetime of its own.
 Network | A network of components connected together to run some logic and
