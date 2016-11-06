@@ -19,8 +19,8 @@ toolchain in the sense that it:
   i.e. A manager can see IPs traveling through the network while it is running.
 
 If you are only interested in how to create components (both elementary and
-composite), go to the [Component specification](#component-specification)
-section.
+composite), go straight to the [Component
+specification](#component-specification) section.
 
 ## Philosophy
 
@@ -163,21 +163,12 @@ manifest specifies where and how to build the component.
 ```yaml
 source:
   protocol: git|http
-  url: <url-to-archive>
+  url: <url to archive>
   format: git|tar|tgz|zip
-  # Current Working Directory
-  cwd: <path-to-a-sub-directory-in-the-archive-to-build-from>
-  build: <command-to-run-to-build>
-  check:
-    <path-to-a-required-library>: <path-to-a-script-to-check-the-library>
-    <path-to-another-library>: <path-to-another-script>
-    <path-to-a-command>: <path-to-yet-another-script-to-check-the-command>
-  deploy:
-    - list/of/files
-    - and/directories/
-    - relative/to/cwd/as/defined/above
-    - to/deploy/after/build
-    - wildcard/*/is/accepted
+  working directory: <path to a sub directory in the archive to build from>
+  build: <command to run to build>
+  check: <list of paths to scripts that check for the expected libraries>
+  deploy: <list of files relative to the working directory to deploy after build>
 ```
 
 Note that if any of the `build` command or the `check` scripts return a
@@ -208,9 +199,9 @@ Morrison depends on the component developer to specify how to check whether a
 system library is what the component needs. After all, the component developer
 knows everything that the component uses.
 
-When there are components with conflicting required libraries, Morrison would
-not compile a network if a check from one of the conflicting components return
-a non-zero status code.
+This also prevents two components using the same library but expecting two
+versions. If the component developer of each conflicting components is diligent
+in their tests, the conflict would be raised the network would fail to start.
 
 ### Inter-component communication
 
@@ -243,32 +234,32 @@ sends its data. It requires a `ports` section in the component manifest!
 ports:
   input:
     one inport name:
-      delimiter type: flat-grouping
+      delimiter type: flat grouping
       # CSV delimitering
       close packet: [44] # Comma
       open bracket: []
       close bracket: [10] # Newline
     another inport name:
-      delimiter type: hierarchical-grouping
+      delimiter type: hierarchical grouping
       # Parenthesized list
       close packet: [44] # Comma
       open bracket: [40] # Open parenthesis
       close bracket: [41] # Close parenthesis
     yet another inport name:
-      delimiter type: no-grouping
+      delimiter type: no grouping
       # CSV without bracket, i.e. a single-line CSV
       close packet: [44] # Comma
       open bracket: []
       close bracket: []
   output:
     an outport name:
-      delimiter type: flat-grouping
+      delimiter type: flat grouping
       # Multi-byte delimiters
       close packet: [255, 12] # East Asian character comma in UTF-16
       open bracket: []
       close bracket: [48, 2] # East Asian character period in UTF-16
     another outport name:
-      delimiter type: single-packet
+      delimiter type: single packet
       # No delimitering, i.e. a single-packet connection
       close packet: []
       open bracket: []
@@ -279,22 +270,22 @@ Each port corresponds to a set of delimiter definitions: its delimitering type,
 packet closing delimiter, bracket opening delimiter, and bracket closing
 delimiter. The available delimitering types are:
 
-- `single-packet`: The entire stream consists of just one packet. An example
+- `single packet`: The entire stream consists of just one packet. An example
   would be a parser component parsing a stream of bytes from a file reader
   component. Normal Unix programs basically operate in this model; they read
   from or write to the stream however they want without clear logical
   demarcation of the transmitted bytes.
-- `no-grouping`: The stream consists of packets separated by some delimiter but
+- `no grouping`: The stream consists of packets separated by some delimiter but
   there is only one level. It is useful for a component that only cares about
   receiving its data in chunks, each pair of which is demarcated by a common
   token. An example is a component that takes in C-style strings (i.e.
   null-terminated) and produces string length. The marker would be the null
   character while it does not care about grouping.
-- `flat-grouping`: The stream consists of packets of exactly ONE level. Every
+- `flat grouping`: The stream consists of packets of exactly ONE level. Every
   time a packet arrives that is NOT in a bracket already, it automatically
   opens a new bracket. An example is CSV. Each line is considered a group and
   no data may be outside of a group.
-- `hierarchical-grouping`: This enables the full power of FBP. A stream
+- `hierarchical grouping`: This enables the full power of FBP. A stream
   consists of packets and brackets of more packets or more brakcets of packets.
   Examples include transmitting hierarchical data structures like JSON and XML.
 
