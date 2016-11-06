@@ -68,6 +68,10 @@ an FBP connection to a Unix pipe. Because of this system-level isolation,
 unlike traditional cFBP implementations, the content, rather than the "handle",
 of an IP is copied.
 
+The implication is that a component has no formal way to create or destroy an
+IP. A data packet is simply "destroyed" when received by a component and
+"created" when sent.
+
 #### Bounded buffer in connections
 
 Connection buffer is not bounded. Practically, they are bounded by the allowed
@@ -152,7 +156,7 @@ human-friendliness, and support for comments.
 A component is built and deployed from some source. A component's sourcing
 manifest specifies where and how to build the component.
 
-```
+```yaml
 source:
   protocol: git|http
   url: <url-to-archive>
@@ -203,6 +207,113 @@ knows everything that the component uses.
 When there are components with conflicting required libraries, Morrison would
 not compile a network if a check from one of the conflicting components return
 a non-zero status code.
+
+### Inter-component communication
+
+Just like services communicate with each other with HTTP connections in a
+RESTful architecture, a component in FBP may only communicate with another
+component with a connection. A connection attaches to a component's port on
+each of its two ends.
+
+A connection is a stream. Just like there is a stream of messages in a
+WebSocket connection over TCP, an FBP connection is a stream of Information
+Packets, or IPs. Unlike a WebSocket connection, however, an FBP connection is
+uni-directional.
+
+Each component must define its ports. Like a TCP port, all data going through a
+connection must pass through a designated port. Each FBP port must be
+designated as an input port or an output port when the component is developed;
+in contrast, a TCP port can be used by any program at runtime.
+
+In cFBP, IPs are explicitly created or destroyed by a component. In Morrison,
+there is an open-world assumption that components are not expected to "know"
+that they are in the Morrison world. Coupled with that all data transmitted
+across the network are copied, this assumption leads to the design choice for
+Morrison implicit create and destroy IPs on behalf of the component.
+
+For Morrison to manage the IPs, it needs to understand the language that a
+particular component speaks, so it requires the component to specify how it
+sends its data. It requires a `ports` section in the component manifest!
+
+```yaml
+ports:
+  input:
+    oneInportName:
+      delimiterType: flat-grouping
+      # CSV delimitering
+      packetClose: [44] # Comma
+      bracketOpen: []
+      bracketClose: [10] # Newline
+    another_inport_name:
+      delimiterType: hierarchical-grouping
+      # Parenthesized list
+      packetClose: [44] # Comma
+      bracketOpen: [40] # Open parenthesis
+      bracketClose: [41] # Close parenthesis
+    Yet another inport name:
+      delimiterType: no-grouping
+      # CSV without bracket, i.e. a single-line CSV
+      packetClose: [44] # Comma
+      bracketOpen: []
+      bracketClose: []
+  output:
+    AnOutportName:
+      delimiterType: flat-grouping
+      # Multi-byte delimiters
+      packetClose: [255, 12] # East Asian character comma in UTF-16
+      bracketOpen: []
+      bracketClose: [48, 2] # East Asian character period in UTF-16
+    aNoThErOuTpOrTnAmE:
+      delimiterType: single-packet
+      # No delimitering, i.e. a single-packet connection
+      packetClose: []
+      bracketOpen: []
+      bracketClose: []
+```
+
+Each port corresponds to a set of delimiter definitions: its delimitering type,
+packet closing delimiter, bracket opening delimiter, and bracket closing
+delimiter. The available delimitering types are:
+
+- `single-packet`: The entire stream consists of just one packet. An example
+  would be a parser component parsing a stream of bytes from a file reader
+  component. Normal Unix programs basically operate in this model; they read
+  from or write to the stream however they want without clear logical
+  demarcation of the transmitted bytes.
+- `no-grouping`: The stream consists of packets separated by some delimiter but
+  there is only one level. It is useful for a component that only cares about
+  receiving its data in chunks, each pair of which is demarcated by a common
+  token. An example is a component that takes in C-style strings (i.e.
+  null-terminated) and produces string length. The marker would be the null
+  character while it does not care about grouping.
+- `flat-grouping`: The stream consists of packets of exactly ONE level. Every
+  time a packet arrives that is NOT in a bracket already, it automatically
+  opens a new bracket. An example is CSV. Each line is considered a group and
+  no data may be outside of a group.
+- `hierarchical-grouping`: This enables the full power of FBP. A stream
+  consists of packets and brackets of more packets or more brakcets of packets.
+  Examples include transmitting hierarchical data structures like JSON and XML.
+
+Each of the delimiter definitions is a list of bytes in decimal. At compile
+time, Morrison matches the delimiter specification of the two ports in each 
+connection. If they do not match, Morrison would insert an adapter to make sure
+the delimiters agree.
+
+Note that the are some delimitering structures that cannot be expressed with
+this specification. For instance, full-fledged CSV cannot be expressed as it
+allows escaping delimiter characters by quoting a field. It is not the job of
+Morrison to provide a way to automagically convert every format to every other
+format. It provides these delimitering options to ease integration as long as
+the components delimit their input/output unambiguously.
+
+There is a `packetClose` but not a `packetOpen`. Morrison assumes that all data
+in a connection to be well-formed. And so once a packet has closed, a bracket
+has closed, or the connection has just been opened, it assumes that the
+upcoming data is part of a packet.
+
+Input and output ports have distinct namespaces, and there is no restriction on
+the port name; it may be cAmElCaSe or even contain symbols! Morrison compiles
+ports into numeric values (just Unix file descriptors) for execution.
 
 ## Glossary
 
