@@ -39,6 +39,13 @@ backend application is part of what Morrison is about. The biggest benefit of
 FBP is to enable all stakeholders on a software project to participate in the
 process of designing a piece of software.
 
+A main focus of Morrison is software correctness and collaboration over
+performance. The use of Unix processes and Unix IPC makes Morrison relatively
+inefficient compared to a framework designed for a specific language. The value
+though is that existing programs can readily turn into components and teams
+with different preferences on technology choices can collaborate without
+knowing how to interact with other components.
+
 In addition, Morrison is supposed to be an end-to-end toolchain to package,
 build, deploy, run, AND monitor an FBP program. The program in the "backend"
 emits IP (packet) and debugging information so that the frontend can show the
@@ -145,6 +152,11 @@ development without needing to be a software engineer.
 A software engineer who just wants to get stuff done and doesn't want to worry
 about maintenance. Managed service in the cloud is the best thing since sliced
 bread.
+
+### Paul
+
+A veteran engineer who is interested in applying Flow-Based Programming to
+advance modern-day computing.
 
 ## Component specification
 
