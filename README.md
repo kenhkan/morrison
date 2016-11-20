@@ -386,16 +386,15 @@ Array ports allow a process to selectively receive IPs from a number of
 once it merges into a single stream accessible via a file descriptor.
 
 In Morrison, a component may use array ports by reading the environment
-variable `MORRISON_INPORTS_MAP_PATH` and `MORRISON_OUTPORTS_MAP_PATH`. The
-former is the path to a file that contains port mapping for input ports, the
-latter for output ports.
+variable `MORRISON_PORT_MAP_PATH`. It is the path to a file that contains port
+mapping for ports.
 
 #### Map file protocol
 
 Each map file is tab-separated values of the following format:
 
 ```
-port-name  list-of-file-descriptors-separated-by-comma
+IN|OUT  port-name   list-of-file-descriptors-separated-by-comma
 ```
 
 Note that the spaces above should be a tab in the real file.
@@ -403,10 +402,11 @@ Note that the spaces above should be a tab in the real file.
 An example would be:
 
 ```
-IN  0
-ArrayPort_1  3,5,6,7
-NormalPort   4
-ArrayPort_2  8,9,10
+IN  IN  0
+IN  ArrayPort_1  3,5,6,7
+OUT OUT 4
+IN  ArrayPort_2  8,9,10
+OUT NormalPort   4
 ```
 
 A program can then read from this file and loop through the list to selectively
