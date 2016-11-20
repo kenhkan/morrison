@@ -13,8 +13,6 @@ toolchain in the sense that it:
 - links the different components that may have the same names
   without conflicts while avoids employing a "sub-dependency" strategy like
   what Node.js' npm does; and
-- exposes a frontend UI that allows inspection of the network in real-time.
-  i.e. A manager can see IPs traveling through the network while it is running.
 
 ## Sections
 
@@ -37,23 +35,15 @@ in Ruby while another in Rust; and there is no SDK for the program to be
 compiled with.
 
 It targets software designed to run in a modern server-grade Unix-like
-environment.  It does not aim to run in the browser, on Windows, or on embedded
-hardware.  Frontend FBP (like a GUI) is out of scope. However, a frontend GUI
-to a backend application is part of what Morrison is about. The biggest benefit
-of FBP is to enable all stakeholders on a software project to participate in
-the process of designing a piece of software.
+environment. It does not aim to run in the browser, on Windows, or on embedded
+hardware. Frontend FBP (like a GUI) is out of scope.
 
 A main focus of Morrison is software correctness and collaboration over
 performance. The use of Unix processes and Unix IPC makes Morrison relatively
-inefficient compared to a framework designed for a specific language. The value
-though is that existing programs can readily turn into components and teams
+inefficient compared to a framework designed in a specific language. The
+advantage is that existing programs can readily turn into components and teams
 with different preferences on technology choices can collaborate without
-knowing how to interact with other components.
-
-In addition, Morrison is supposed to be an end-to-end toolchain to package,
-build, deploy, run, AND monitor an FBP program. The program in the "backend"
-emits IPs (packets) and debugging information so that the frontend can show the
-application running in real-time.
+knowing about the other components.
 
 There is a single machine assumption. Parallelism is a difficult topic and is
 best tackled at a different level on top of Morrison. Morrison is only
