@@ -289,6 +289,8 @@ elementary:
   output-streams: <an array of case insensitive names>
 ```
 
+##### Building
+
 `build` is not restricted to compilation. Even if the program runs interpreted,
 like a Python or a Node.js script, installing the necessary runtime is the
 responsibility of the `build` commands.
@@ -302,6 +304,11 @@ options:
 - ubuntu
 - centos
 
+If any of the build commands exits with a non-zero status code, the network
+would fail to compile.
+
+##### I/O
+
 In the `environment-variables` attribute, the keys are case insensitive just
 like parameters and streams, but the values are case sensitive so that the
 wrapper can correctly specify the environment variables that the underlying
@@ -309,6 +316,11 @@ program expects.
 
 `parameters`, `input-streams`, and `output-streams` must be an ordered array of
 names because their orders are significant with Unix pipes.
+
+##### Termination
+
+If an automatic port is attached, the exit code of the source process is sent
+as the termination IP when the process terminates.
 
 ### Composite component specification
 
