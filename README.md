@@ -149,50 +149,6 @@ human consumption but they all belong in a single manifest file in practice.
 A manifest file is written in [YAML](http://yaml.org/) for its maturity,
 human-friendliness, and support for comments.
 
-### Sourcing
-
-A component is built and deployed from some source. A component's sourcing
-manifest specifies where and how to build the component.
-
-```yaml
-source:
-  protocol: git | http
-  url: <url to archive>
-  format: git | tar | tgz | zip
-  working-directory: <path to a sub directory within the archive>
-  build: <command to run to build>
-  checks: <list of paths to scripts that check for the expected libraries>
-  deploy: <list of files relative to the working directory to deploy after build>
-```
-
-Note that if any of the `build` command or the `check` scripts return a
-non-zero status code, the build and deployment process would abort.
-
-#### Checks
-
-The `checks` section is critical. In an ideal world where every component runs
-code inside its own boundaries, everything is rosy. In practice, components
-most likely share libraries installed on the system, or call a command
-available.
-
-Checks ensure the correct libraries and commands are available as expected by a
-component. In addition, if two components in a network use the same system
-library/command but expect two different "versions", Morrison would not compile
-the network.
-
-The question becomes: how does Morrison know which version does each
-conflicting component need? The answer is: it doesn't. There is no universal
-way to track version. Some prefer hashes; some prefer semantic versioning; and
-some prefer proprietary conventions. Worse yet, even in a single formalized
-versioning scheme, say semantic versioning, what constitutes as a
-backward-compatible version is not universally practiced or even agreed upon.
-
-Morrison does not care about the versioning of the component because the
-assumption is meaningless given the current practice on versioning. Instead,
-Morrison depends on the component developer to specify how to check whether a
-system library is what the component needs. After all, the component developer
-is the only one who knows everything that the component uses.
-
 ### Inter-component communication
 
 Just like web services must communicate with each other with HTTP connections
@@ -304,30 +260,52 @@ into integer values (Unix file descriptors) for execution.
 
 ### Elementary component specification
 
-We have talked about specifying to Morrison how to fetch the component and what
-ports the component expects. For elementary components, Morrison needs four
-things:
+For elementary components, Morrison needs six questions answered:
 
-1. How to run the program inside a component?
-2. What environment variables does the program expect?
-3. What parameters does it expect?
-4. What I/O streams does it expect?
+1. Where to source the program?
+2. How do we build the program?
+3. How to run the program?
+4. What environment variables does the program expect?
+5. What parameters does it expect?
+6. What I/O streams does it expect?
 
 #### The specification
 
 ```yaml
 elementary:
-  path: <path to program>
+  source:
+    protocol: git | http
+    url: <url to archive>
+    format: git | tar | tgz | zip
+    working-directory: <path to a sub directory within the archive to start the build process>
+  build:
+    all: <command to run to build in all operating systems>
+    <OS name>: <command to run to build in this particular operating system>
+    <... more OS build definitions ...>
+  path: <path to the program to run after building>
   environment-variables: <an associative array of case insensitive names to case sensitive names>
   parameters: <an array of case insensitive names>
   input-streams: <an array of case insensitive names>
   output-streams: <an array of case insensitive names>
 ```
 
-In the environment variables attribute, the keys are case insensitive just like
-parameters and streams, but the values are case sensitive so that the wrapper
-can correctly specify the environment variables that the underlying program
-expects.
+`build` is not restricted to compilation. Even if the program runs interpreted,
+like a Python or a Node.js script, installing the necessary runtime is the
+responsibility of the `build` commands.
+
+When building, Morrison only runs the build command defined for `all` and the
+one associated with the host operating system. The available operating system
+options:
+
+- mac
+- freebsd
+- ubuntu
+- centos
+
+In the `environment-variables` attribute, the keys are case insensitive just
+like parameters and streams, but the values are case sensitive so that the
+wrapper can correctly specify the environment variables that the underlying
+program expects.
 
 `parameters`, `input-streams`, and `output-streams` must be an ordered array of
 names because their orders are significant with Unix pipes.
