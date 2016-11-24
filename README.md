@@ -2,19 +2,15 @@
 
 Morrison is an FBP toolchain built on the ideas of [classical Flow-Based
 Programming](http://www.jpaulmorrison.com/fbp/). It is designed to run a
-network (i.e. a program in FBP) on a single Unix-like machine. It is a
-toolchain that it:
+network (i.e. a program in FBP) on a single Unix-like machine. It:
 
-- allows different sourcing protocols like git and HTTP to be used
-  when fetching the source of components;
+- fetches components via different sourcing protocols like git and HTTP;
 - provides wrappers and adapters for programs not written with Morrison in
   mind;
-- compiles network specification files into bash program; and
+- compiles network specification files into a bash program; and
 - links the different components that may have the same names
   without conflicts while avoids employing a "sub-dependency" strategy like
   what Node.js' npm does; and
-
-## Sections
 
 I am interested in...
 
@@ -28,11 +24,10 @@ I am interested in...
 
 ### Goals and non-goals
 
-Morrison is not language-specific or even FBP-specific. If a program runs on a
-Unix-like machine, it qualifies as a Morrison component candidate. The program
-may not even be aware that it is running as a component. One component may be
-in Ruby while another in Rust; and there is no SDK for the program to be
-compiled with.
+Morrison is not language-specific. If a program runs on a Unix-like machine, it
+qualifies as a Morrison component candidate. The program may not even be aware
+that it is running as a component. One component may be in Ruby while another
+in Rust; and there is no SDK for the program to interact with.
 
 It targets software designed to run in a modern server-grade Unix-like
 environment. It does not aim to run in the browser, on Windows, or on embedded
@@ -43,7 +38,7 @@ performance. The use of Unix processes and Unix IPC makes Morrison relatively
 inefficient compared to a framework designed in a specific language. The
 advantage is that existing programs can readily turn into components and teams
 with different preferences on technology choices can collaborate without
-coupling with the other parts of the system.
+coupling with the different parts of a system.
 
 There is a single machine assumption. Parallelism is a non-trivial topic and is
 best tackled at a different level on top of Morrison. Morrison is only
@@ -67,7 +62,7 @@ Two of the three legs of FBP [2] also hold for Morrison:
 #### Data packets (IPs) with a lifetime of their own
 
 Enforcing IPs with their own lifetime offers the guarantee that a single IP is
-not simultaneously used in two processes. This guarantee is rendered
+not simultaneously consumed in two processes. This guarantee is rendered
 meaningless in Morrison as it maps an FBP process to a Unix system process and
 an FBP connection to a Unix pipe. Because of this system-level isolation,
 unlike traditional cFBP implementations, the content, rather than the "handle",
@@ -93,9 +88,9 @@ software in question.
 
 #### Tree structures
 
-There are no trees. The benefit of tree structures in cFBP is to pass just the
-handle instead of the content itself. In Morrison, no sharing is allowed
-between processes as each of them is a Unix system process.
+The benefit of tree structures in cFBP is to pass multiple IPs as one IP in a
+bounded connection. In Morrison, we cannot pass just the handle of a tree of
+IPs between processes as each process of them is a Unix system process.
 
 #### Scheduling rules
 
@@ -149,9 +144,9 @@ advance modern-day computing.
 Each component requires a manifest file so that Morrison knows how to deal with
 it. In fact, only the manifest file is needed to source, build, and deploy a
 component. This section is split into several sub-sections for ease of
-consumption but they all fall in one manifest file in practice.
+human consumption but they all belong in a single manifest file in practice.
 
-The manifest files are written in [YAML](http://yaml.org/) for its maturity,
+A manifest file is written in [YAML](http://yaml.org/) for its maturity,
 human-friendliness, and support for comments.
 
 ### Sourcing
@@ -212,19 +207,19 @@ uni-directional.
 
 Each component must define its ports. Like a TCP port, all data going through a
 connection must pass through a designated port. Each FBP port must be
-designated as an input port or an output port when the component is developed;
-in contrast, a TCP port can be used to send and to receive.
+designated as an input port or an output port when the component is designed;
+in contrast, a TCP port can be used both to send and to receive.
 
 In cFBP, IPs are explicitly created or destroyed by a component. In Morrison,
 there is an open-world assumption that components are not expected to "know"
 that they are in the Morrison world. Coupled with that all data transmitted
 across the network are copied, this assumption leads to the design choice for
-Morrison implicit create and destroy IPs on behalf of the component.
+Morrison to implicit create and destroy IPs on behalf of the component.
 
-For Morrison to manage the IPs, it needs to understand the language which a
-particular component speaks, so it requires the component to specify how it
-sends and receives its data. It requires a `ports` section in the component
-manifest.
+For Morrison to manage the IPs, it needs to understand the delimiting
+convention that a particular component uses. Morrison requires the component to
+specify how it sends and receives its data, by specifying the `ports` section
+in the component manifest.
 
 ```yaml
 ports:
@@ -286,25 +281,26 @@ closing delimiter. The available delimitering types are:
   consists of packets and brackets of more packets. Examples include
   transmitting hierarchical data structures like JSON and XML.
 
-Each of the delimiter definitions is a list of bytes in decimal. At compile
-time, Morrison matches the delimiter specification of the two ports in each 
+Each of the delimiter definitions is an array of bytes in decimal. At compile
+time, Morrison matches the delimiter specification of the two ports in each
 connection. If they do not match, Morrison would insert an adapter to make sure
 the delimiters agree.
 
 Note that there are some delimitering structures that cannot be expressed with
 this specification. For instance, proper CSV cannot be expressed as it allows
 escaping delimiter characters by quoting a field. It is not the job of Morrison
-to provide a way to automagically convert every format to every other format.
-It provides these delimitering options to adhere to the FBP concept of an IP.
+to provide a way to automagically convert every format into every other format.
+It provides these delimitering options to implement to the FBP concept of an
+IP.
 
 There is a `close-packet` but not a `open-packet`. Morrison assumes that all data
 in a connection to be well-formed. And so once a packet has closed, a bracket
 has closed, or the connection has just been opened, it assumes that the
 upcoming data is part of a packet.
 
-Input and output ports have distinct namespaces, and port names may contain
-alphanumeric characters, underscores, and dashes. Morrison compiles ports into
-integer values (just Unix file descriptors) for execution.
+Input and output ports have distinct namespaces. Port names may contain
+alphanumeric characters, underscores, and dashes. Morrison compiles port names
+into integer values (Unix file descriptors) for execution.
 
 ### Elementary component specification
 
@@ -373,14 +369,14 @@ The name of a process in this network (i.e. the key of the `processes`
 associative array) is an arbitrary name for this particular instance. It is
 required so that we can specify to which process a port is connected.
 
-Set `connected-process` to `*` to connect to network's own ports.
+Set `connected-process` to `*` to connect to the network's own ports.
 `connected-port` may be set to `*` for an automatic port.
 
 ## Special constructs
 
-Some FBP constructs are crucial, yet there is no equivalent mapping with Unix
-pipes. It is therefore necessary for the program to "know" that it is a
-Morrison component to be able to use these constructs.
+Some FBP constructs are crucial, yet there may not be equivalent mappings to
+Unix pipes. It is therefore necessary for the program to "know" that it is a
+Morrison component to use these constructs.
 
 ### Array ports
 
@@ -389,7 +385,7 @@ Array ports allow a process to selectively receive IPs from a number of
 once it merges into a single stream accessible via a file descriptor.
 
 In Morrison, a component may use array ports by reading the environment
-variable `MORRISON_PORT_MAP_PATH`. It is the path to a file that contains port
+variable `MORRISON_PORT_MAP_PATH`. It is the path to a file that contains
 mapping for ports.
 
 #### Map file protocol
@@ -467,9 +463,9 @@ A component that is a wrapped program. i.e. not a network.
 
 ### Composite component
 
-A network. The term is used to distinguish between components that are wrapped
-programs and composite components that are networks. Also simply referred to
-as a "composite".
+A network. The term is used to distinguish between elementary components that
+are wrapped programs and composite components that are networks of other
+sub-components. Also simply referred to as a "composite".
 
 ### Substream sensitivitiy
 
