@@ -55,9 +55,9 @@ this to work as a valid FBP implementation.
 
 Two of the three legs of FBP [2] also hold for Morrison:
 
-* True: asynchronous processes
-* False: data packets (IPs) with a lifetime of their own
-* True: external definition of connections
+- True: asynchronous processes
+- False: data packets (IPs) with a lifetime of their own
+- True: external definition of connections
 
 #### Data packets (IPs) with a lifetime of their own
 
@@ -353,8 +353,8 @@ composite:
         url: <URL to a private component manifest>
       input:
         <name of one input port>:
-          connected-process: <name of the connected process> | *
-          connected-port: <name of the connected port> | *
+          connected-process: <name of the connected process> | network
+          connected-port: <name of the connected port> | auto
         <... more input port definitions ...>
       output:
         <... more output port definitions ...>
@@ -369,8 +369,8 @@ The name of a process in this network (i.e. the key of the `processes`
 associative array) is an arbitrary name for this particular instance. It is
 required so that we can specify to which process a port is connected.
 
-Set `connected-process` to `*` to connect to the network's own ports.
-`connected-port` may be set to `*` for an automatic port.
+Set `connected-process` to `network` to connect to the composite's ports.
+`connected-port` may be set to `auto` for an automatic port.
 
 ## Special constructs
 
