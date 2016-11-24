@@ -3,13 +3,13 @@
 Morrison is an FBP toolchain built on the ideas of [classical Flow-Based
 Programming](http://www.jpaulmorrison.com/fbp/). It is designed to run a
 network (i.e. a program in FBP) on a single Unix-like machine. It is a
-toolchain in the sense that it:
+toolchain that it:
 
 - allows different sourcing protocols like git and HTTP to be used
   when fetching the source of components;
 - provides wrappers and adapters for programs not written with Morrison in
   mind;
-- compiles network specification files into bash program;
+- compiles network specification files into bash program; and
 - links the different components that may have the same names
   without conflicts while avoids employing a "sub-dependency" strategy like
   what Node.js' npm does; and
@@ -21,7 +21,7 @@ I am interested in...
 - [what Morrison aims at solving](#goals-and-non-goals).
 - [how Morrison is different from FBP](#differences-from-classical-fbp-cfbp).
 - [creating a component](#component-specification).
-- [creating a user story as a Github issue](#personas).
+- [creating a Github issue](#personas).
 - [the glossary](#glossary).
 
 ## Philosophy
@@ -43,9 +43,9 @@ performance. The use of Unix processes and Unix IPC makes Morrison relatively
 inefficient compared to a framework designed in a specific language. The
 advantage is that existing programs can readily turn into components and teams
 with different preferences on technology choices can collaborate without
-knowing about the other components.
+coupling with the other parts of the system.
 
-There is a single machine assumption. Parallelism is a difficult topic and is
+There is a single machine assumption. Parallelism is a non-trivial topic and is
 best tackled at a different level on top of Morrison. Morrison is only
 concerned with coordinating interdependent processes on a single machine.
 
@@ -56,7 +56,7 @@ the sub-sections below.
 
 Note that despite the following differences, the two major constraints of FBP,
 the flow constraint and the order-preserving constraint, [1] are enforced for
-this to work as an FBP implementation.
+this to work as a valid FBP implementation.
 
 Two of the three legs of FBP [2] also hold for Morrison:
 
@@ -74,13 +74,14 @@ unlike traditional cFBP implementations, the content, rather than the "handle",
 of an IP is copied.
 
 The implication is that a component has no explicit way to create or destroy an
-IP. A data packet is simply "destroyed" when received by a component and
-"created" when sent.
+IP. A data packet is simply "created" when sent by a component and "destroyed"
+when received.
+
 
 #### Bounded buffer in connections
 
 Morrison connection buffer is not bounded. Practically, they are bounded by the
-allowed size of a Unix pipe on the machine. In that sense, it does honor the
+buffer size of a Unix pipe on the machine. In that sense, it does honor the
 bounded buffer feature of cFBP so that processes do block, but the buffer size
 is not configurable at the application level.
 
@@ -94,8 +95,7 @@ software in question.
 
 There are no trees. The benefit of tree structures in cFBP is to pass just the
 handle instead of the content itself. In Morrison, no sharing is allowed
-between processes as each of them is a Unix system process. The cost of
-serialization to implement tree structures outstrips the benefits.
+between processes as each of them is a Unix system process.
 
 #### Scheduling rules
 
@@ -148,8 +148,8 @@ advance modern-day computing.
 
 Each component requires a manifest file so that Morrison knows how to deal with
 it. In fact, only the manifest file is needed to source, build, and deploy a
-component. This section is split into several sections for ease of consumption
-but they all fall in one manifest file in practice.
+component. This section is split into several sub-sections for ease of
+consumption but they all fall in one manifest file in practice.
 
 The manifest files are written in [YAML](http://yaml.org/) for its maturity,
 human-friendliness, and support for comments.
@@ -161,10 +161,10 @@ manifest specifies where and how to build the component.
 
 ```yaml
 source:
-  protocol: git|http
+  protocol: git | http
   url: <url to archive>
-  format: git|tar|tgz|zip
-  working directory: <path to a sub directory in the archive to build from>
+  format: git | tar | tgz | zip
+  working-directory: <path to a sub directory within the archive>
   build: <command to run to build>
   checks: <list of paths to scripts that check for the expected libraries>
   deploy: <list of files relative to the working directory to deploy after build>
@@ -200,8 +200,8 @@ is the only one who knows everything that the component uses.
 
 ### Inter-component communication
 
-Just like web services communicate with each other with HTTP connections in a
-RESTful architecture, a component in FBP may only communicate with another
+Just like web services must communicate with each other with HTTP connections
+in a RESTful architecture, a component in FBP may only communicate with another
 component with an FBP connection. A connection attaches to a component's port
 on each of its two ends.
 
@@ -228,49 +228,61 @@ manifest.
 
 ```yaml
 ports:
+  input | output:
+    <port name>:
+      grouping-type: none | flat | hierarchical
+      close-packet: <array of bytes>
+      open-bracket: <array of bytes>
+      close-bracket: <array of bytes>
+```
+
+For example:
+
+```yaml
+ports:
   input:
-    one inport name:
-      delimiter type: flat grouping
+    one-inport-name:
+      grouping-type: flat
       # CSV delimitering
-      close packet: [44] # Comma
-      open bracket: []
-      close bracket: [10] # Newline
-    another inport name:
-      delimiter type: hierarchical grouping
+      close-packet: [44] # Comma
+      open-bracket: []
+      close-bracket: [10] # Newline
+    another-inport-name:
+      grouping-type: hierarchical
       # Parenthesized list
-      close packet: [44] # Comma
-      open bracket: [40] # Open parenthesis
-      close bracket: [41] # Close parenthesis
-    yet another inport name:
-      delimiter type: no grouping
+      close-packet: [44] # Comma
+      open-bracket: [40] # Open parenthesis
+      close-bracket: [41] # Close parenthesis
+    yet-another-inport-name:
+      grouping-type: none
       # CSV without bracket, i.e. a single-line CSV
-      close packet: [44] # Comma
-      open bracket: []
-      close bracket: []
+      close-packet: [44] # Comma
+      open-bracket: []
+      close-bracket: []
   output:
-    an outport name:
-      delimiter type: flat grouping
+    an-outport-name:
+      grouping-type: flat
       # Multi-byte delimiters
-      close packet: [255, 12] # East Asian character comma in UTF-16
-      open bracket: []
-      close bracket: [48, 2] # East Asian character period in UTF-16
+      close-packet: [255, 12] # East Asian character comma in UTF-16
+      open-bracket: []
+      close-bracket: [48, 2] # East Asian character period in UTF-16
 ```
 
 In the manifest, each port corresponds to a set of delimiter definitions: its
-delimitering type, packet closing delimiter, bracket opening delimiter, and
-bracket closing delimiter. The available delimitering types are:
+grouping type, packet closing delimiter, bracket opening delimiter, and bracket
+closing delimiter. The available delimitering types are:
 
-- `no grouping`: The stream consists of packets separated by some delimiter but
+- `none`: The stream consists of packets separated by some delimiter but
   there is only one level. It is useful for a component that only cares about
   receiving its data in chunks, each pair of which is demarcated by a common
   token. An example is a component that takes in C-style strings (i.e.
   null-terminated) and produces string length. The marker would be the null
   character and it does not care about grouping.
-- `flat grouping`: The stream consists of packets of exactly ONE level. Every
+- `flat`: The stream consists of packets of exactly ONE level. Every
   time a packet arrives that is NOT in a bracket already, it automatically
   opens a new bracket. An example is CSV. Each line is considered a group and
   no data may be outside of a group.
-- `hierarchical grouping`: This enables the full power of FBP. A stream
+- `hierarchical`: This enables the full power of FBP. A stream
   consists of packets and brackets of more packets. Examples include
   transmitting hierarchical data structures like JSON and XML.
 
@@ -285,16 +297,14 @@ escaping delimiter characters by quoting a field. It is not the job of Morrison
 to provide a way to automagically convert every format to every other format.
 It provides these delimitering options to adhere to the FBP concept of an IP.
 
-There is a `close packet` but not a `open packet`. Morrison assumes that all data
+There is a `close-packet` but not a `open-packet`. Morrison assumes that all data
 in a connection to be well-formed. And so once a packet has closed, a bracket
 has closed, or the connection has just been opened, it assumes that the
 upcoming data is part of a packet.
 
-Input and output ports have distinct namespaces, and there is no restriction on
-the port name; it may be a "human-friendly name", "cAmElCaSe", or even contain
-symbols! It may not, however, contain invisible characters like newline or tab.
-Morrison compiles ports into integer values (just Unix file descriptors) for
-execution.
+Input and output ports have distinct namespaces, and port names may contain
+alphanumeric characters, underscores, and dashes. Morrison compiles ports into
+integer values (just Unix file descriptors) for execution.
 
 ### Elementary component specification
 
@@ -312,10 +322,10 @@ things:
 ```yaml
 elementary:
   path: <path to program>
-  environment variables: <an associative array of case insensitive names to case sensitive names>
+  environment-variables: <an associative array of case insensitive names to case sensitive names>
   parameters: <an array of case insensitive names>
-  input streams: <an array of case insensitive names>
-  output streams: <an array of case insensitive names>
+  input-streams: <an array of case insensitive names>
+  output-streams: <an array of case insensitive names>
 ```
 
 In the environment variables attribute, the keys are case insensitive just like
@@ -323,37 +333,32 @@ parameters and streams, but the values are case sensitive so that the wrapper
 can correctly specify the environment variables that the underlying program
 expects.
 
-`parameters`, `input streams`, and `output streams` must be an ordered array of
+`parameters`, `input-streams`, and `output-streams` must be an ordered array of
 names because their orders are significant with Unix pipes.
 
 ### Composite component specification
 
-If the component is a network, Morrison needs three things:
+If the component is a network, Morrison needs two things:
 
 1. What sub-components are used?
 2. Which ports of each sub-component are used and where are they attached to?
-3. Coordinates of each sub-component relative to other sub-components so that
-   they can be shown on a page as a network.
 
 #### The specification
 
 ```yaml
 composite:
-  substream sensitivity: true | false
+  substream-sensitivity: true | false
   processes:
     <name of one process in this network>:
       source:
-        type: local|registry|private
+        type: local | registry | private
         path: <path to a component manifest file on the local filesystem>
         name: <a component name in the registry>
         url: <URL to a private component manifest>
-      coordinates:
-        x: <x coordinate of the component in this network>
-        y: <y coordinate of the component in this network>
       input:
         <name of one input port>:
-          connected process: <name of the connected process> | <empty>
-          connected port: <name of connected port> | *
+          connected-process: <name of the connected process> | *
+          connected-port: <name of the connected port> | *
         <... more input port definitions ...>
       output:
         <... more output port definitions ...>
@@ -368,16 +373,14 @@ The name of a process in this network (i.e. the key of the `processes`
 associative array) is an arbitrary name for this particular instance. It is
 required so that we can specify to which process a port is connected.
 
-Leave `connected process` empty to connect to network's own ports. `Connected
-port` may be set to `*` for an automatic port.
+Set `connected-process` to `*` to connect to network's own ports.
+`connected-port` may be set to `*` for an automatic port.
 
 ## Special constructs
 
 Some FBP constructs are crucial, yet there is no equivalent mapping with Unix
-pipes and thus violate Morrison's requirement that the program inside a
-component does not need to know that it's interacting in an FBP network. It is
-therefore necessary for the program to "know" that it is a Morrison component
-to be able to use these constructs.
+pipes. It is therefore necessary for the program to "know" that it is a
+Morrison component to be able to use these constructs.
 
 ### Array ports
 
@@ -394,18 +397,18 @@ mapping for ports.
 Each map file is tab-separated values of the following format:
 
 ```
-IN|OUT  port-name   list-of-file-descriptors-separated-by-comma
+IN | OUT  <port name>   <list of file descriptors separated by comma>
 ```
 
-Note that the spaces above should be a tab in the real file.
+Note that the spaces above should be a tab in a real file.
 
 An example would be:
 
 ```
 IN  IN  0
-IN  ArrayPort_1  3,5,6,7
+IN  ArrayPort-1  3,5,6,7
 OUT OUT 4
-IN  ArrayPort_2  8,9,10
+IN  ArrayPort-2  8,9,10
 OUT NormalPort   4
 ```
 
@@ -431,7 +434,7 @@ Morrison world.
 
 A black box that runs some logic and honors a number of in-ports and out-ports.
 The only way to communicate with the internal logic in a component is through
-the ports. This may be a wrapped program or a network of sub-components.
+its ports. This may be a wrapped program or a network of sub-components.
 
 ### Port
 
@@ -440,7 +443,7 @@ similar to TCP ports, except that FBP ports are by name and uni-directional.
 
 ### Connection
 
-Two ports are connected by a connection.
+Two ports, and by extension two processes, are connected by a connection.
 
 ### Information Packet (IP)
 
@@ -460,7 +463,7 @@ A network. The term is used to distinguish it being part of a larger network.
 
 ### Elementary component
 
-A component that is not a network.
+A component that is a wrapped program. i.e. not a network.
 
 ### Composite component
 
@@ -470,17 +473,17 @@ as a "composite".
 
 ### Substream sensitivitiy
 
-A network designer may set a port as "substream sensitive" so that a substream
-going through that port is treated as a stream. That is, when there is a
-closing bracket coming from "outside" of the network, the stream is closed
+A network designer may set a subnet as "substream sensitive" so that a
+substream going into the subnet is treated as a stream. That is, when there is
+a closing bracket coming from "outside" of the network, the stream is closed
 "inside" the network. See the chapter [Composite
 Components](http://www.jpaulmorrison.com/fbp/compos.shtml) in the FBP book for
 details.
 
 ### Array port
 
-An array port is a normal port but supports multiple incoming connections (for
-in-ports) or multiple outgoing connections (for out-ports).  Each sub-port in
+An array port is a port that supports multiple incoming connections (for
+in-ports) or multiple outgoing connections (for out-ports). Each sub-port in
 an array port is a distinct and independent port from the other (sub-)ports.
 
 ### Initial information packet (IIP)
