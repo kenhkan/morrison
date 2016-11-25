@@ -284,8 +284,7 @@ elementary:
     format: git | tar | tgz | zip
     working-directory: <path to a sub directory within the archive to start the build process>
   build:
-    all: <command to run to build in all operating systems>
-    <OS name>: <command to run to build in this particular operating system>
+    nix | mac | freebsd | ubuntu | centos: <build command to run in the specified operating systems>
     <... more OS build definitions ...>
   path: <path to the program to run after building>
   environment-variables: <an associative array of case insensitive names to case sensitive names>
@@ -300,14 +299,21 @@ elementary:
 like a Python or a Node.js script, installing the necessary runtime is the
 responsibility of the `build` commands.
 
-When building, Morrison only runs the build command defined for `all` and the
-one associated with the host operating system. The available operating system
-options:
+When building, Morrison runs the build command defined for each OS label that
+matches the host operating system. For instance, one component may be defined
+as:
 
-- mac
-- freebsd
-- ubuntu
-- centos
+```yaml
+elementary:
+  build:
+    nix: make
+    mac: brew install wget
+    freebsd: pkg install curl
+```
+
+For a Mac host, `make` and `brew install wget` would run. The order is always
+from the more general label to the more specific label. `nix` always runs first
+for all Unix-like hosts.
 
 If any of the build commands exits with a non-zero status code, the network
 would fail to compile.
