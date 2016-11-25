@@ -277,7 +277,7 @@ For elementary components, Morrison needs six questions answered:
 
 ```yaml
 elementary:
-  termination: on-exit | on-error
+  terminate: on-exit | on-error
   source:
     protocol: git | http
     url: <url to archive>
@@ -333,17 +333,17 @@ process is usually terminated when all its output ports have been closed.
 In Morrison, inheriting the limitation of Unix convention of never closing
 standard streams (i.e. stdin, stdout, and stderr), the termination rule is
 slightly bent. By default, a process is always terminated when the internal
-logic returns with an exit code.
+logic returns with an exit code. That is, `terminate` is set to `on-exit`.
 
 To implement a component that deactivates rather than determinates upon
-exiting, set the property `termination` to `on-error`. A process which
+exiting, set the property `terminate` to `on-error`. A process which
 terminates on error always deactivates, unless the internal logic returns a
 _non-zero_ exit code. Such a process is only terminated either on error or all
 its upstream processes have terminated.
 
-If an automatic output port is attached to a process, the exit code of the
-source process is sent in an IP to the corresponding target process when the
-source process terminates.
+If an `*on-termination*` output port is attached to a process, the exit code of
+the source process is sent in an IP to the corresponding target process when
+the source process terminates.
 
 ### Composite component specification
 
@@ -365,11 +365,20 @@ composite:
         name: <a component name in the registry>
         url: <URL to a private component manifest>
       input:
-        <name of one input port>:
-          connected-process: <name of the connected process> | network
-          connected-port: <name of the connected port> | auto
+        <name of an input port of another process>:
+          connected-process: <name of the connected process>
+          connected-port: <name of the connected port> | *on-termination*
+        <name of an input port of the parent network>:
+          connected-process: <name of the connected process> | *network*
+          connected-port: <name of the connected port>
         <... more input port definitions ...>
       output:
+        <name of an output port of another process>:
+          connected-process: <name of the connected process>
+          connected-port: <name of the connected port> | *activate*
+        <name of an output port of the parent network>:
+          connected-process: <name of the connected process> | *network*
+          connected-port: <name of the connected port>
         <... more output port definitions ...>
     <... more process definitions ...>
 ```
@@ -382,8 +391,15 @@ The name of a process in this network (i.e. the key of the `processes`
 associative array) is an arbitrary name for this particular instance. It is
 required so that we can specify to which process a port is connected.
 
-Set `connected-process` to `network` to connect to the composite's ports.
-`connected-port` may be set to `auto` for an automatic port.
+Set `connected-process` to `*network*` to connect to a port of the network that
+is using the process as its sub-component.
+
+`connected-port` may be set to `*on-termination*` for an input port to receive
+IPs when another process has terminated and set to `*activate*` for an output
+port to send an IP to activate another process.
+
+Note that `*network*` cannot be used in conjunction with the two special ports
+because a child process cannot effect its parent network.
 
 ## Special constructs
 
@@ -505,9 +521,11 @@ setting initial data.
 Ports that are not part of the component definition but are automatically
 available for each component.
 
-An automatic port is used to transmit signals of shutting down or delayed start
-of a process. An automatic input port activates a process upon receiving an IP.
-An automatic output port sends an IP upon the process terminating.
+An automatic input port activates a process upon receiving an IP. In Morrison
+it's called `*activate*`.
+
+An automatic output port sends an IP upon the process terminating. In Morrison
+it's called `*on-termination*`.
 
 ## References
 
