@@ -72,7 +72,6 @@ The implication is that a component has no explicit way to create or destroy an
 IP. A data packet is simply "created" when sent by a component and "destroyed"
 when received.
 
-
 #### Bounded buffer in connections
 
 Morrison connection buffer is not bounded. Practically, they are bounded by the
@@ -94,8 +93,13 @@ IPs between processes as each process of them is a Unix system process.
 
 #### Scheduling rules
 
-Scheduling rules in cFBP are largely ignored because much of the control at
-that level is delegated to the operating system kernel.
+The [FBP Scheduling Rules](http://www.jpaulmorrison.com/fbp/schedrls.shtml)
+chapter describes the scheduling rule in a cFBP implementation. However,
+scheduling rules in Morrison largely follows how a Unix-like program would
+usually behave as Morrison's "scheduler" is the operating system kernel.
+
+There should be no surprise if you understand both FBP and Unix behaviors when
+it comes to scheduling rules.
 
 ## Personas
 
@@ -273,6 +277,7 @@ For elementary components, Morrison needs six questions answered:
 
 ```yaml
 elementary:
+  termination: on-exit | on-error
   source:
     protocol: git | http
     url: <url to archive>
@@ -317,10 +322,28 @@ program expects.
 `parameters`, `input-streams`, and `output-streams` must be an ordered array of
 names because their orders are significant with Unix pipes.
 
-##### Termination
+#### Process deactivation and termination
 
-If an automatic port is attached, the exit code of the source process is sent
-as the termination IP when the process terminates.
+In cFBP, there is a distinction between deactivation and termination. A
+deactivated process has finished running but may be activated (read: run) again
+on incoming IPs, whereas a terminated process has ended execution for good and
+will never be started again, until the network is manually initiated again. A
+process is usually terminated when all its output ports have been closed.
+
+In Morrison, inheriting the limitation of Unix convention of never closing
+standard streams (i.e. stdin, stdout, and stderr), the termination rule is
+slightly bent. By default, a process is always terminated when the internal
+logic returns with an exit code.
+
+To implement a component that deactivates rather than determinates upon
+exiting, set the property `termination` to `on-error`. A process which
+terminates on error always deactivates, unless the internal logic returns a
+_non-zero_ exit code. Such a process is only terminated either on error or all
+its upstream processes have terminated.
+
+If an automatic output port is attached to a process, the exit code of the
+source process is sent in an IP to the corresponding target process when the
+source process terminates.
 
 ### Composite component specification
 
@@ -480,8 +503,11 @@ setting initial data.
 ### Automatic port
 
 Ports that are not part of the component definition but are automatically
-available for each component. An automatic port is used to transmit signals of
-shutting down or delayed start of a process.
+available for each component.
+
+An automatic port is used to transmit signals of shutting down or delayed start
+of a process. An automatic input port activates a process upon receiving an IP.
+An automatic output port sends an IP upon the process terminating.
 
 ## References
 
