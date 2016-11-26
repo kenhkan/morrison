@@ -91,16 +91,6 @@ The benefit of tree structures in cFBP is to pass multiple IPs as one IP in a
 bounded connection. In Morrison, we cannot pass just the handle of a tree of
 IPs between processes as each process of them is a Unix system process.
 
-#### Scheduling rules
-
-The [FBP Scheduling Rules](http://www.jpaulmorrison.com/fbp/schedrls.shtml)
-chapter describes the scheduling rule in a cFBP implementation. However,
-scheduling rules in Morrison largely follows how a Unix-like program would
-usually behave as Morrison's "scheduler" is the operating system kernel.
-
-There should be no surprise if you understand both FBP and Unix behaviors when
-it comes to scheduling rules.
-
 ## Personas
 
 These personas are to be used when creating user stories so we know who the
@@ -311,7 +301,8 @@ elementary:
     freebsd: pkg install curl
 ```
 
-For a Mac host, `make` and `brew install wget` would run. The order is always
+For a Mac host, `make` and `brew install wget` would run in the directory as
+defined by `working-directory` in the `source` section. The order is always
 from the more general label to the more specific label. `nix` always runs first
 for all Unix-like hosts.
 
@@ -331,10 +322,10 @@ names because their orders are significant with Unix pipes.
 #### Process deactivation and termination
 
 In cFBP, there is a distinction between deactivation and termination. A
-deactivated process has finished running but may be activated (read: run) again
-on incoming IPs, whereas a terminated process has ended execution for good and
-will never be started again, until the network is manually initiated again. A
-process is usually terminated when all its output ports have been closed.
+deactivated process has finished running but may be activated again on incoming
+IPs, whereas a terminated process has ended execution for good and will never
+be started again, until the network is manually initiated again. A process is
+usually terminated when all its output ports have been closed.
 
 In Morrison, inheriting the limitation of Unix convention of never closing
 standard streams (i.e. stdin, stdout, and stderr), the termination rule is
