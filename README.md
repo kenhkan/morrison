@@ -402,6 +402,47 @@ port to send an IP to activate another process.
 Note that `*network*` cannot be used in conjunction with the two special ports
 because a child process cannot effect its parent network.
 
+### Sharing the component
+
+Components are meant to be re-used so that the wheel is not re-invented over
+and over again. A component can be shared on the Vyzzi registry by specifying a
+`registry` section in the manifest and pushing it to the registry.
+
+```yaml
+registry:
+  name: <component name>
+  version-label: <program's version>
+  summary: <a short blurb to show in search and component info page>
+  homepage: <URL to home page of the component>
+  license:
+    type: <license type>
+    url: <URL to the license>
+```
+
+The component name is in the form of `<username>/<component name>`, where
+`<username>` is a registered user in the Vyzzi registry. For instance,
+`vyzzi/copy`.
+
+Note that one does not specify a version for the component but a version
+"label". The Vyzzi registry is versioning scheme agnostic. Each time a
+component is pushed, it simply records a new version. The canonical version is
+just an incrementing integer. `version-label` is only for users when browsing
+the registry.
+
+`<license type>` may be one of:
+
+- Apache License 2.0
+- BSD 2-Clause
+- BSD 3-Clause
+- GNU AGPLv3
+- GNU GPLv3
+- GNU LGPLv3
+- MIT License
+- Mozilla Public License 2.0
+- Proprietary
+- Public
+- Other (`url` in `license` is required if selected)
+
 ## Special constructs
 
 Some FBP constructs are crucial, yet there may not be equivalent mappings to
