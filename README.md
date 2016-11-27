@@ -188,24 +188,74 @@ closing delimiter. The available delimitering types are:
   no data may be outside of a group.
 - `hierarchical`: This enables the full power of FBP. A stream
   consists of packets and brackets of more packets. Examples include
-  transmitting hierarchical data structures like JSON and XML.
+  transmitting hierarchical data structures like JSON and XML. However, note
+  that JSON/XML cannot be fully expressed because they support properties.
 
 Each of the delimiter definitions is an array of bytes in decimal. Vyzzi does
 not care about the character encoding. At compile time, Vyzzi matches the
 delimiter specification of the two ports in each connection. If they do not
 match, Vyzzi would insert an adapter to make sure the delimiters agree.
 
-Note that there are some delimitering structures that cannot be expressed with
-this specification. For instance, proper CSV cannot be expressed as it allows
-escaping delimiter characters by quoting a field. It is not the job of Vyzzi to
-provide a way to automagically convert every format into every other format.
-It provides these delimitering options to implement to the FBP concept of an
-IP.
+### Delimiter conversion rules
+
+Conversion may go with any one of three ways:
+
+1. From one delimitering type to the same delimitering type. For example, a
+   component sends in CSV and another receives in TSV. The two use different
+   formats but the delimitering structure is the same, most likely with `flat`.
+2. From a "lower" type to a "higher" type. An example would be sending CSV
+   (most likely a `flat`) to a component that expects a symbolically JSON
+   structure (a `hierarchical`).
+3. From a "higher" type to a "lower" type. Think symbolic JSON to CSV, the
+   oppposite of the previous example.
+
+There is no surprise on the first kind of conversions. It's a simple map from
+one set of delimiter to another.
+
+The second one is also intuitive, going from `none` to `flat` requires no
+change because `flat` does not require brackets anyway. Going from `flat` to
+`hierarchical` forces an open bracket to be added at the beginning of the
+stream as well as right after each bracket close.
+
+The third one is like the second one in reverse. Vyzzi converts a close bracket
+to a close packet for `hierarchical` to `none` conversion. For open brackets,
+Vyzzi simply drops them, as it's not used in "lower" types.
+
+#### The responsibility of Vyzzi in delimiter conversion
+
+There are some structures that cannot be expressed with this delimitering
+specification. For instance, proper CSV cannot be expressed as it allows
+escaping delimiter characters by quoting a field (e.g. `a,b,"c, d, and e",f`).
+Another example is JSON. Properties (e.g. `{"a": 1}`) cannot be represented
+with delimitering.
+
+It is not the responsibility of Vyzzi to provide a way to automagically convert
+every format into every other format. It provides these delimitering options
+only to fully honor the FBP concept of an Information Packet. And it is
+certainly not Vyzzi's job to impose a particular world view onto how all
+components communicate.
+
+This is a design decision that the network designer needs to make. For the CSV
+example above, a possible approach would be to have a CSV parser that takes a
+connection in which each IP is the content of a CSV file, and outputs the
+constituent parts in individual IPs delimitered by something other than commas
+and newlines. For this to work, the receiving component would need to expect
+delimiters other than commas and newlines as well, though the delimiters need
+not be the same as those used by the sending component.
+
+In other words, the designer of each individual component chooses its own set
+of delimiters, knowing that they do not conflict with the content of the IPs.
+Vyzzi only takes care of matching the delimiter sets, but not what those sets
+are.
+
+#### Where is open packet?
 
 There is a `close-packet` but not a `open-packet`. Vyzzi assumes that all data
 in a connection to be well-formed. And so once a packet has closed, a bracket
 has closed, or the connection has just been opened, it assumes that the
 upcoming data is part of a packet.
+
+#### Port names
 
 Input and output ports have distinct namespaces. Port names may contain
 alphanumeric characters, underscores, and dashes. Vyzzi compiles port names
