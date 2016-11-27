@@ -330,13 +330,13 @@ usually terminated when all its output ports have been closed.
 In Morrison, inheriting the limitation of Unix convention of never closing
 standard streams (i.e. stdin, stdout, and stderr), the termination rule is
 slightly bent. By default, a process is always terminated when the internal
-logic returns with an exit code. That is, `terminate` is set to `on-exit`.
+logic returns with any exit code. That is, `terminate` is set to `on-exit`.
 
-To implement a component that deactivates rather than determinates upon
-exiting, set the property `terminate` to `on-error`. A process which
-terminates on error always deactivates, unless the internal logic returns a
-_non-zero_ exit code. Such a process is only terminated either on error or all
-its upstream processes have terminated.
+To implement a component that deactivates rather than terminates upon exiting,
+set the property `terminate` to `on-error`. A process which is set to terminate
+on error always deactivates, unless the internal logic returns a _non-zero_
+exit code. Such a process is only terminated either on error or all its
+upstream processes have terminated.
 
 If an `*on-termination*` output port is attached to a process, the exit code of
 the source process is sent in an IP to the corresponding target process when
