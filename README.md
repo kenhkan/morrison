@@ -1,11 +1,11 @@
-# Morrison
+# Vyzzi
 
-Morrison is an FBP toolchain built on the ideas of [classical Flow-Based
+Vyzzi is an FBP toolchain built on the ideas of [classical Flow-Based
 Programming](http://www.jpaulmorrison.com/fbp/). It is designed to run a
 network (i.e. a program in FBP) on a single Unix-like machine. It:
 
 - fetches components via different sourcing protocols like git and HTTP;
-- provides wrappers and adapters for programs not written with Morrison in
+- provides wrappers and adapters for programs not written with Vyzzi in
   mind;
 - compiles network specification files into a bash program; and
 - links the different components that may have the same names
@@ -14,8 +14,8 @@ network (i.e. a program in FBP) on a single Unix-like machine. It:
 
 I am interested in...
 
-- [what Morrison aims at solving](#goals-and-non-goals).
-- [how Morrison is different from FBP](#differences-from-classical-fbp-cfbp).
+- [what Vyzzi aims at solving](#goals-and-non-goals).
+- [how Vyzzi is different from FBP](#differences-from-classical-fbp-cfbp).
 - [creating a component](#component-specification).
 - [creating a Github issue](#personas).
 - [the glossary](#glossary).
@@ -24,8 +24,8 @@ I am interested in...
 
 ### Goals and non-goals
 
-Morrison is not language-specific. If a program runs on a Unix-like machine, it
-qualifies as a Morrison component candidate. The program may not even be aware
+Vyzzi is not language-specific. If a program runs on a Unix-like machine, it
+qualifies as a Vyzzi component candidate. The program may not even be aware
 that it is running as a component. One component may be in Ruby while another
 in Rust; and there is no SDK for the program to interact with.
 
@@ -33,27 +33,27 @@ It targets software designed to run in a modern server-grade Unix-like
 environment. It does not aim to run in the browser, on Windows, or on embedded
 hardware. Frontend FBP (like a GUI) is out of scope.
 
-A main focus of Morrison is software correctness and collaboration over
-performance. The use of Unix processes and Unix IPC makes Morrison relatively
+A main focus of Vyzzi is software correctness and collaboration over
+performance. The use of Unix processes and Unix IPC makes Vyzzi relatively
 inefficient compared to a framework designed in a specific language. The
 advantage is that existing programs can readily turn into components and teams
 with different preferences on technology choices can collaborate without
 coupling with the different parts of a system.
 
 There is a single machine assumption. Parallelism is a non-trivial topic and is
-best tackled at a different level on top of Morrison. Morrison is only
-concerned with coordinating interdependent processes on a single machine.
+best tackled at a different level on top of Vyzzi. Vyzzi is only concerned with
+coordinating interdependent processes on a single machine.
 
 ### Differences from classical FBP (cFBP)
 
-Morrison is inspired by cFBP but diverges from some of its rules highlighted in
+Vyzzi is inspired by cFBP but diverges from some of its rules highlighted in
 the sub-sections below.
 
 Note that despite the following differences, the two major constraints of FBP,
 the flow constraint and the order-preserving constraint, [1] are enforced for
 this to work as a valid FBP implementation.
 
-Two of the three legs of FBP [2] also hold for Morrison:
+Two of the three legs of FBP [2] also hold for Vyzzi:
 
 - True: asynchronous processes
 - False: data packets (IPs) with a lifetime of their own
@@ -63,10 +63,10 @@ Two of the three legs of FBP [2] also hold for Morrison:
 
 Enforcing IPs with their own lifetime offers the guarantee that a single IP is
 not simultaneously consumed in two processes. This guarantee is rendered
-meaningless in Morrison as it maps an FBP process to a Unix system process and
-an FBP connection to a Unix pipe. Because of this system-level isolation,
-unlike traditional cFBP implementations, the content, rather than the "handle",
-of an IP is copied.
+meaningless in Vyzzi as it maps an FBP process to a Unix system process and an
+FBP connection to a Unix pipe. Because of this system-level isolation, unlike
+traditional cFBP implementations, the content, rather than the "handle", of an
+IP is copied.
 
 The implication is that a component has no explicit way to create or destroy an
 IP. A data packet is simply "created" when sent by a component and "destroyed"
@@ -74,13 +74,13 @@ when received.
 
 #### Bounded buffer in connections
 
-Morrison connection buffer is not bounded. Practically, they are bounded by the
+Vyzzi connection buffer is not bounded. Practically, they are bounded by the
 buffer size of a Unix pipe on the machine. In that sense, it does honor the
 bounded buffer feature of cFBP so that processes do block, but the buffer size
 is not configurable at the application level.
 
 The benefit of configurable boundedness is for the network designer to set the
-degree of coupling between processes depending on system resources. Morrison
+degree of coupling between processes depending on system resources. Vyzzi
 targets modern server-grade machines (see the section "Goals and non-goals"
 above) and assumes that the operating system is configured to optimally run the
 software in question.
@@ -88,8 +88,8 @@ software in question.
 #### Tree structures
 
 The benefit of tree structures in cFBP is to pass multiple IPs as one IP in a
-bounded connection. In Morrison, we cannot pass just the handle of a tree of
-IPs between processes as each process of them is a Unix system process.
+bounded connection. In Vyzzi, we cannot pass just the handle of a tree of IPs
+between processes as each process of them is a Unix system process.
 
 ## Personas
 
@@ -135,10 +135,10 @@ advance modern-day computing.
 
 ## Component specification
 
-Each component requires a manifest file so that Morrison knows how to deal with
+Each component requires a manifest file so that Vyzzi knows how to deal with
 it. In fact, only the manifest file is needed to source, build, and deploy a
-component. This section is split into several sub-sections for ease of
-human consumption but they all belong in a single manifest file in practice.
+component. This section is split into several sub-sections for ease of human
+consumption but they all belong in a single manifest file in practice.
 
 A manifest file is written in [YAML](http://yaml.org/) for its maturity,
 human-friendliness, and support for comments.
@@ -160,16 +160,16 @@ connection must pass through a designated port. Each FBP port must be
 designated as an input port or an output port when the component is designed;
 in contrast, a TCP port can be used both to send and to receive.
 
-In cFBP, IPs are explicitly created or destroyed by a component. In Morrison,
+In cFBP, IPs are explicitly created or destroyed by a component. In Vyzzi,
 there is an open-world assumption that components are not expected to "know"
-that they are in the Morrison world. Coupled with that all data transmitted
-across the network are copied, this assumption leads to the design choice for
-Morrison to implicit create and destroy IPs on behalf of the component.
+that they are in the Vyzzi world. Coupled with that all data transmitted across
+the network are copied, this assumption leads to the design choice for Vyzzi to
+implicit create and destroy IPs on behalf of the component.
 
-For Morrison to manage the IPs, it needs to understand the delimiting
-convention that a particular component uses. Morrison requires the component to
-specify how it sends and receives its data, by specifying the `ports` section
-in the component manifest.
+For Vyzzi to manage the IPs, it needs to understand the delimiting convention
+that a particular component uses. Vyzzi requires the component to specify how
+it sends and receives its data, by specifying the `ports` section in the
+component manifest.
 
 ```yaml
 ports:
@@ -232,29 +232,29 @@ closing delimiter. The available delimitering types are:
   transmitting hierarchical data structures like JSON and XML.
 
 Each of the delimiter definitions is an array of bytes in decimal. At compile
-time, Morrison matches the delimiter specification of the two ports in each
-connection. If they do not match, Morrison would insert an adapter to make sure
+time, Vyzzi matches the delimiter specification of the two ports in each
+connection. If they do not match, Vyzzi would insert an adapter to make sure
 the delimiters agree.
 
 Note that there are some delimitering structures that cannot be expressed with
 this specification. For instance, proper CSV cannot be expressed as it allows
-escaping delimiter characters by quoting a field. It is not the job of Morrison
-to provide a way to automagically convert every format into every other format.
+escaping delimiter characters by quoting a field. It is not the job of Vyzzi to
+provide a way to automagically convert every format into every other format.
 It provides these delimitering options to implement to the FBP concept of an
 IP.
 
-There is a `close-packet` but not a `open-packet`. Morrison assumes that all data
+There is a `close-packet` but not a `open-packet`. Vyzzi assumes that all data
 in a connection to be well-formed. And so once a packet has closed, a bracket
 has closed, or the connection has just been opened, it assumes that the
 upcoming data is part of a packet.
 
 Input and output ports have distinct namespaces. Port names may contain
-alphanumeric characters, underscores, and dashes. Morrison compiles port names
+alphanumeric characters, underscores, and dashes. Vyzzi compiles port names
 into integer values (Unix file descriptors) for execution.
 
 ### Elementary component specification
 
-For elementary components, Morrison needs six questions answered:
+For elementary components, Vyzzi needs six questions answered:
 
 1. Where to source the program?
 2. How do we build the program?
@@ -289,7 +289,7 @@ elementary:
 like a Python or a Node.js script, installing the necessary runtime is the
 responsibility of the `build` commands.
 
-When building, Morrison runs the build command defined for each OS label that
+When building, Vyzzi runs the build command defined for each OS label that
 matches the host operating system. For instance, one component may be defined
 as:
 
@@ -327,7 +327,7 @@ IPs, whereas a terminated process has ended execution for good and will never
 be started again, until the network is manually initiated again. A process is
 usually terminated when all its output ports have been closed.
 
-In Morrison, inheriting the limitation of Unix convention of never closing
+In Vyzzi, inheriting the limitation of Unix convention of never closing
 standard streams (i.e. stdin, stdout, and stderr), the termination rule is
 slightly bent. By default, a process is always terminated when the internal
 logic returns with any exit code. That is, `terminate` is set to `on-exit`.
@@ -344,7 +344,7 @@ the source process terminates.
 
 ### Composite component specification
 
-If the component is a network, Morrison needs two things:
+If the component is a network, Vyzzi needs two things:
 
 1. What sub-components are used?
 2. Which ports of each sub-component are used and where are they attached to?
@@ -406,7 +406,7 @@ because a child process cannot effect its parent network.
 
 Some FBP constructs are crucial, yet there may not be equivalent mappings to
 Unix pipes. It is therefore necessary for the program to "know" that it is a
-Morrison component to use these constructs.
+Vyzzi component to use these constructs.
 
 ### Array ports
 
@@ -414,9 +414,9 @@ Array ports allow a process to selectively receive IPs from a number of
 "sub-ports" in a single port. A Unix program, however, cannot separate out data
 once it merges into a single stream accessible via a file descriptor.
 
-In Morrison, a component may use array ports by reading the environment
-variable `MORRISON_PORT_MAP_PATH`. It is the path to a file that contains
-mapping for ports.
+In Vyzzi, a component may use array ports by reading the environment variable
+`VYZZI_PORT_MAP_PATH`. It is the path to a file that contains mapping for
+ports.
 
 #### Map file protocol
 
@@ -443,29 +443,29 @@ read from a sub-port.
 
 ## Glossary
 
-Morrison tries to adhere to cFBP as closely as possible, so the vocabulary used
-is almost identical as well.
+Vyzzi tries to adhere to cFBP as closely as possible, so the vocabulary used is
+almost identical as well.
 
 For more FBP definitions, see the [FBP
 Glossary](http://www.jpaulmorrison.com/fbp/gloss.htm).
 
 ### Program
 
-In the context of Morrison, a "program" is Unix program that runs "inside" a
-component. It is not necessarily aware that it is running inside the Morrison
+In the context of Vyzzi, a "program" is Unix program that runs "inside" a
+component. It is not necessarily aware that it is running inside the Vyzzi
 world. A wrapper is applied around a program to connect the program to the
-Morrison world.
+Vyzzi world.
 
 ### Wrapper
 
-A shim generated by Morrison when building a component to connect the
-underlying program to the Morrison world by mapping Unix I/O concepts (e.g.
-parameters, environment variables, pipes, etc) to Morrison I/O concepts (ports
-and connections).
+A shim generated by Vyzzi when building a component to connect the underlying
+program to the Vyzzi world by mapping Unix I/O concepts (e.g.  parameters,
+environment variables, pipes, etc) to Vyzzi I/O concepts (ports and
+connections).
 
 ### Adapter
 
-A component generated by Morrison when building a component that performs some
+A component generated by Vyzzi when building a component that performs some
 conversion between two user-defined components so that they talk to each other
 correctly.
 
@@ -487,8 +487,8 @@ Two ports, and by extension two processes, are connected by a connection.
 ### Information Packet (IP)
 
 In FBP, it is a unit of datum that gets transmitted over a connection at a time
-and has a lifetime of its own. In Morrison, an IP does not have a lifetime of
-its own in the sense that it is automatically created and destroyed upon
+and has a lifetime of its own. In Vyzzi, an IP does not have a lifetime of its
+own in the sense that it is automatically created and destroyed upon
 sending/receipt.
 
 ### Network
@@ -535,10 +535,10 @@ setting initial data.
 Ports that are not part of the component definition but are automatically
 available for each component.
 
-An automatic input port activates a process upon receiving an IP. In Morrison
-it's called `*activate*`.
+An automatic input port activates a process upon receiving an IP. In Vyzzi it's
+called `*activate*`.
 
-An automatic output port sends an IP upon the process terminating. In Morrison
+An automatic output port sends an IP upon the process terminating. In Vyzzi
 it's called `*on-termination*`.
 
 ## References
