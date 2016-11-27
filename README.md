@@ -414,6 +414,7 @@ registry:
   version-label: <program's version>
   summary: <a short blurb to show in search and component info page>
   homepage: <URL to home page of the component>
+  email: <Email address to contact for question>
   license:
     type: <license type>
     url: <URL to the license>
@@ -421,7 +422,7 @@ registry:
 
 The component name is in the form of `<username>/<component name>`, where
 `<username>` is a registered user in the Vyzzi registry. For instance,
-`vyzzi/copy`.
+`core/copy`.
 
 Note that one does not specify a version for the component but a version
 "label". The Vyzzi registry is versioning scheme agnostic. Each time a
