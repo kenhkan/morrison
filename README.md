@@ -190,10 +190,10 @@ closing delimiter. The available delimitering types are:
   consists of packets and brackets of more packets. Examples include
   transmitting hierarchical data structures like JSON and XML.
 
-Each of the delimiter definitions is an array of bytes in decimal. At compile
-time, Vyzzi matches the delimiter specification of the two ports in each
-connection. If they do not match, Vyzzi would insert an adapter to make sure
-the delimiters agree.
+Each of the delimiter definitions is an array of bytes in decimal. Vyzzi does
+not care about the character encoding. At compile time, Vyzzi matches the
+delimiter specification of the two ports in each connection. If they do not
+match, Vyzzi would insert an adapter to make sure the delimiters agree.
 
 Note that there are some delimitering structures that cannot be expressed with
 this specification. For instance, proper CSV cannot be expressed as it allows
