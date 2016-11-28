@@ -280,7 +280,7 @@ elementary:
   source:
     protocol: git | http
     url: <url to archive>
-    format: git | tar | tgz | zip
+    format: git | gzip | bzip2
     working-directory: <path to a sub directory within the archive to start the build process>
   build:
     nix | mac | freebsd | ubuntu | centos: <build command to run in the specified operating systems>
