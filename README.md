@@ -218,9 +218,10 @@ change because `flat` does not require brackets anyway. Going from `flat` to
 `hierarchical` forces an open bracket to be added at the beginning of the
 stream as well as right after each bracket close.
 
-The third one is like the second one in reverse. Vyzzi converts a close bracket
-to a close packet for `hierarchical` to `none` conversion. For open brackets,
-Vyzzi simply drops them, as it's not used in "lower" types.
+The third one is the tricky one. For conversion from either `hierarchical` or
+`flat` to `none`, the conversion is simple as Vyzzi can simply drop all
+brackets. For `hierarchical` to `flat`, it's disallowed because of
+disambiguity.
 
 #### The responsibility of Vyzzi in delimiter conversion
 
