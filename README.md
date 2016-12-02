@@ -213,15 +213,18 @@ Conversion may go with any one of three ways:
 There is no surprise on the first kind of conversions. It's a simple map from
 one set of delimiter to another.
 
-The second one is also intuitive, going from `none` to `flat` requires no
-change because `flat` does not require brackets anyway. Going from `flat` to
-`hierarchical` forces an open bracket to be added at the beginning of the
-stream as well as right after each bracket close.
+The second one is tricky. Going from `none` to `flat` requires no change
+because `flat` does not require brackets anyway. Going from `flat` to
+`hierarchical` is disallowed because of the ambiguity of whether and where to
+insert the open brackets.
 
-The third one is the tricky one. For conversion from either `hierarchical` or
+The third one is equally tricky. For conversion from either `hierarchical` or
 `flat` to `none`, the conversion is simple as Vyzzi can simply drop all
-brackets. For `hierarchical` to `flat`, it's disallowed because of
-disambiguity.
+brackets. For `hierarchical` to `flat`, it's disallowed because of disambiguity
+in the semantics of the output.
+
+To achieve the disallowed conversion types, insert a component in between the
+two that would perform the correct marshalling behavior.
 
 #### The responsibility of Vyzzi in delimiter conversion
 
