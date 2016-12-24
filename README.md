@@ -310,14 +310,14 @@ as:
 ```yaml
 elementary:
   build:
-    nix: make
-    mac: brew install wget
-    freebsd: pkg install curl
+    unix-like: make
+    macos: brew install wget
+    freebsd: pkg_add -r wget
 ```
 
-For a Mac host, `make` and `brew install wget` would run in the directory as
+For a macOS host, `make` and `brew install wget` would run in the directory as
 defined by `working-directory` in the `source` section. The order is always
-from the more general label to the more specific label. `nix` always runs first
+from the more general label to the more specific label. `unix-like` always runs first
 for all Unix-like hosts.
 
 If any of the build commands exits with a non-zero status code, the network
