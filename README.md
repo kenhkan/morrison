@@ -101,7 +101,8 @@ This section is split into several sub-sections for ease of human consumption
 but they all belong in a single manifest file in practice.
 
 A manifest file is written in [YAML](http://yaml.org/) for its maturity,
-human-friendliness, and support for comments.
+human-friendliness, and support for comments. The manifest file must be named
+`Vyzzi.yml`.
 
 ### Inter-component communication
 
@@ -484,7 +485,7 @@ Each map file is tab-separated values of the following format:
 IN | OUT  <port name>   <list of file descriptors separated by comma>
 ```
 
-Note that the spaces above should be tabs in a real file.
+Note that the spaces above are tabs in practice.
 
 An example would be:
 
