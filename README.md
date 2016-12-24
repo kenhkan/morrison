@@ -19,7 +19,7 @@ For those looking for:
 - [creating a component](#component-specification).
 - [sharing a component](#sharing-the-component).
 - [contributing to Vyzzi](#contributing).
-- [creating a Github issue](#personas).
+- [requesting for a feature](#personas).
 - [the glossary](#glossary).
 
 ## Philosophy
@@ -522,9 +522,9 @@ constituent components.
 
 ### Personas
 
-These personas are to be used when creating Github issues so we know who the
-feature is catered to. It is highly encouraged to use Agile user story format
-of "As..., I want... so that...".
+These personas are to be used when creating feature requests as Github issues
+so we know who the feature is catered to. It is highly encouraged to use Agile
+user story format of "As..., I want... so that...".
 
 ### Matt
 
