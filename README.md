@@ -17,6 +17,7 @@ For those looking for:
 - [what Vyzzi aims at solving](#goals-and-non-goals).
 - [how Vyzzi is different from FBP](#differences-from-classical-fbp-cfbp).
 - [creating a component](#component-specification).
+- [creating an FBP-aware component](#writing-fbp-aware-components).
 - [sharing a component](#sharing-the-component).
 - [contributing to Vyzzi](#contributing).
 - [requesting for a feature](#personas).
@@ -282,7 +283,6 @@ For elementary components, Vyzzi needs six questions answered:
 
 ```yaml
 elementary:
-  terminate: on-exit | on-error
   source:
     protocol: git | http
     url: <URL to source>
@@ -292,10 +292,13 @@ elementary:
     nix | mac | freebsd | ubuntu | centos: <build command to run in the specified operating systems>
     <... more OS build definitions ...>
   path: <path to the program to run after building, relative to the working directory>
-  environment-variables: <an associative array of case insensitive names to case sensitive names>
-  parameters: <an array of case insensitive names>
-  input-streams: <an array of case insensitive names>
-  output-streams: <an array of case insensitive names>
+  fbp-aware: true | false
+  expectations:
+    terminate: on-exit | on-error
+    environment-variables: <an associative array of case insensitive names to case sensitive names>
+    parameters: <an array of case insensitive names>
+    input-streams: <an array of case insensitive names>
+    output-streams: <an array of case insensitive names>
 ```
 
 ##### Building
@@ -353,6 +356,18 @@ upstream processes have terminated.
 If an `_on-termination_` output port is attached to a process, the exit code of
 the source process is sent in an IP to the corresponding target process when
 the source process terminates.
+
+#### FBP awareness
+
+A primary principle of Vyzzi is to not require elementary components to be
+FBP-aware. This inclusive principle allows Vyzzi to leverage as much
+well-written and already battle-tested software into the FBP world as possible.
+
+For these FBP-unaware components, Vyzzi marshalls data between the FBP world
+and the Unix world. For an FBP-aware component, Vyzzi naturally relies on the
+component to handle the data at a lower level. See the section [Writing
+FBP-aware components](#writing-fbp-aware-components) for more information on
+how to write such a component.
 
 ### Composite component specification
 
@@ -461,28 +476,43 @@ browsing the registry.
 
 *TODO*
 
-## Special constructs
+## Writing FBP-aware components
 
-Some FBP constructs are crucial, yet there may not be equivalent mappings to
-Unix pipes. It is therefore necessary for the program to "know" that it is a
-Vyzzi component to use these constructs.
+Sometimes the component designer does not want Vyzzi to automatically marshal
+data so that a Unix-like program just works. A scenario is when array ports are
+needed. The concept of array ports is unique to FBP, an equivalent to which
+does not exist in the Unix-like world. In that case, the designer must write
+the wrapper herself to leverage the feature.
 
-### Array ports
+An FBP-aware component designates itself as such by setting the attribute
+`elementary.fbp-aware` to `true`. A side-effect of this is that all automatic
+data marshalling enabled by `elementary.expectations` are ignored given that
+the component has volunteered to take control.
+
+Note that only an elementary component may be designated FBP-aware. A composite
+component is automatically FBP-aware given that its constituent parts need to
+be FBP-aware to begin with.
+
+### Ports
+
+An FBP-unaware component simply reads from I/O streams. Its FBP-aware
+counterpart may also choose to do that, but it may also choose to select by
+port name rather than I/O stream. This is especially crucial for array ports.
 
 Array ports allow a process to selectively receive IPs from a number of
 "sub-ports" in a single port. A Unix program, however, cannot separate out data
 once it merges into a single stream accessible via a file descriptor.
 
-In Vyzzi, a component may use array ports by reading the environment variable
+An FBP-aware component may use array ports by reading the environment variable
 `VYZZI_PORT_MAP_PATH`. It is the path to a file that contains mapping for
 ports.
 
-#### Map file protocol
+#### Port map file protocol
 
 Each map file is tab-separated values of the following format:
 
 ```
-IN | OUT  <port name>   <list of file descriptors separated by comma>
+IN | OUT    <port name>    <starting file descriptor>    <file descriptor count>
 ```
 
 Note that the spaces above are tabs in practice.
@@ -490,15 +520,23 @@ Note that the spaces above are tabs in practice.
 An example would be:
 
 ```
-IN  IN  0
-IN  ArrayPort-1  3,5,6,7
-OUT OUT 4
-IN  ArrayPort-2  8,9,10
-OUT NormalPort   4
+IN  IN  0   1
+IN  ArrayPort-1  2   4
+OUT OUT 6   1
+IN  ArrayPort-2  7   3
+OUT NormalPort   10  1
 ```
 
-A program can then read from this file and loop through the list to selectively
-read from a sub-port.
+There is one `IN` input port; `ArrayPort-1` has 4 sub-ports starting at file
+descriptor 2, and so on.
+
+The component would read from this file, whose path is provided as
+`VYZZI_PORT_MAP_PATH`, and a just simple lookup is required to accomplish
+reading by port name.
+
+### Connection protocol
+
+*TODO*
 
 ## Contributing
 
@@ -507,7 +545,7 @@ to create Github issues based on one of the [personas](#personas).
 
 ### A word on licensing
 
-The specification and the Vyzzi compiler, as located at
+The Vyzzi specification, compiler, and the runtime, as located at
 https://github.com/kenhkan/vyzzi, is released under
 [AGPLv3](https://www.gnu.org/licenses/agpl-3.0.en.html).
 
