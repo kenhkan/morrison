@@ -82,7 +82,7 @@ buffer size of a Unix pipe on the machine. In that sense, it does honor the
 bounded buffer feature of cFBP so that processes do block, but the buffer size
 is not configurable at the application level.
 
-The benefit of configurable buffer size is for the network designer to set the
+The benefit of configurable buffer size is for the network developer to set the
 degree of coupling between processes depending on system resources. Vyzzi
 targets modern server-grade machines (see the section "Goals and non-goals"
 above) and assumes that the operating system is configured to run the software
@@ -242,7 +242,7 @@ only to fully honor the FBP concept of an Information Packet. And it is
 certainly not Vyzzi's job to impose a particular world view onto how all
 components should communicate.
 
-This is a design decision that the network designer needs to make. For the CSV
+This is a design decision that the network developer needs to make. For the CSV
 example above, a possible approach would be to have a CSV parser that takes a
 connection in which each IP is the content of a CSV file, and outputs the
 constituent parts in individual IPs delimitered by something other than commas
@@ -250,7 +250,7 @@ and newlines. For this to work, the receiving component would need to expect
 delimiters other than commas and newlines as well, though the delimiters need
 not be the same as those used by the sending component.
 
-In other words, the designer of each individual component chooses its own set
+In other words, the developer of each individual component chooses its own set
 of delimiters, knowing that they do not conflict with the content of the IPs.
 Vyzzi only takes care of matching the delimiter sets, but not what those sets
 are.
@@ -478,10 +478,10 @@ browsing the registry.
 
 ## Writing FBP-aware components
 
-Sometimes the component designer does not want Vyzzi to automatically marshal
+Sometimes the component developer does not want Vyzzi to automatically marshal
 data so that a Unix-like program just works. A scenario is when array ports are
 needed. The concept of array ports is unique to FBP, an equivalent to which
-does not exist in the Unix-like world. In that case, the designer must write
+does not exist in the Unix-like world. In that case, the developer must write
 the wrapper herself to leverage the feature.
 
 An FBP-aware component designates itself as such by setting the attribute
@@ -673,7 +673,7 @@ sub-components. Also simply referred to as a "composite".
 
 ### Substream sensitivitiy
 
-A network designer may set a subnet as "substream sensitive" so that a
+A network developer may set a subnet as "substream sensitive" so that a
 substream going into the subnet is treated as a stream. That is, when there is
 a closing bracket coming from "outside" of the network, the stream is closed
 "inside" the network. See the chapter [Composite
