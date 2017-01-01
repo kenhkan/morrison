@@ -76,7 +76,7 @@ in between two FBP-unaware components does not travel anywhere else.
 Implementing tree structures is non-trivial while respecting Unix semantics.
 This has not been implemented in Vyzzi.
 
-*TODO* Provide an Issue.
+See https://github.com/kenhkan/vyzzi/issues/19.
 
 ## Component specification
 
