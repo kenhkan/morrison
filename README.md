@@ -555,14 +555,12 @@ exists with its own lifetime, until destroyed.
 
 A potentially frustrating problem is that of memory leak. A process that
 receives a lot of IPs but do not drop them in a long-running program can be
-problematic. The only way to combat this problem is to garbage collect on
-process termination.
+problematic. Vyzzi does not attempt to solve this potential problem since it
+has been a long tradition in the FBP community to require components to drop
+IPs when they are not needed.
 
-Under the hood there is a directory created for each initiated process. An IP
-is created by creating a file in the creator process. Sending it over a network
-moves the file to the receiving process' directory. When a process is
-terminated, the corresponding directory is removed and the IPs are garbage
-collected.
+In Vyzzi, the wrapper around an FBP-unaware program automatically drop received
+IPs. Caution must be taken when implementing FBP-aware components.
 
 ## Contributing
 
