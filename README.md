@@ -542,6 +542,28 @@ reading by port name.
 
 *TODO*
 
+## Internals
+
+### IP handling
+
+There is a lot of state in an FBP program. An IP is a file so it's exposed to
+the shared state called the filesystem.
+
+These files are by nature temporary. IP files are set to read-only so that it's
+immutable. This is in line with FBP philosophy that once an IP is created, it
+exists with its own lifetime, until destroyed.
+
+A potentially frustrating problem is that of memory leak. A process that
+receives a lot of IPs but do not drop them in a long-running program can be
+problematic. The only way to combat this problem is to garbage collect on
+process termination.
+
+Under the hood there is a directory created for each initiated process. An IP
+is created by creating a file in the creator process. Sending it over a network
+moves the file to the receiving process' directory. When a process is
+terminated, the corresponding directory is removed and the IPs are garbage
+collected.
+
 ## Contributing
 
 To contribute, simply fork this repo and create a pull request. Also feel free
