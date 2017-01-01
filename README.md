@@ -89,6 +89,26 @@ A manifest file is written in [YAML](http://yaml.org/) for its maturity,
 human-friendliness, and support for comments. The manifest file must be named
 `Vyzzi.yml`.
 
+### Versioning
+
+There must be a version designation in the manifest file:
+
+```yaml
+version: 1
+```
+
+The version is only an ever-increasing integer. Version is incremented when
+there is a conflicting change in the way a key is used in the manifest.
+
+For simplicity, not only is this the version for the manifest, it is also the
+version of the compiler and runtime. In other words, whenever there is *ANY*
+conflicting change, be it a key name in the manifest, the behavior of the
+compiler, or what the runtime provides as its interface, the version is
+incremented.
+
+Employing a monolithic versioning approach removes the confusion when there is
+an unexpected behavior and it is unclear where the change has been.
+
 ### Inter-component communication
 
 Just like web services communicate with each other with HTTP connections in a
