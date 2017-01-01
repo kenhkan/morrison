@@ -49,50 +49,34 @@ coordinating interdependent parts of a piece of software on a single machine.
 
 ### Differences from classical FBP (cFBP)
 
-Vyzzi is inspired by cFBP but diverges from some of its rules highlighted in
-the sub-sections below.
+Vyzzi is inspired by cFBP and is an almost faithful implementation of cFBP.
+However, there are some differences, described in the sections below.
 
-Note that despite the following differences, the two major constraints of FBP,
-the flow constraint and the order-preserving constraint, [1] are enforced for
-this to work as a valid FBP implementation.
+Note that despite the minor differences, the two major constraints of FBP, the
+flow constraint and the order-preserving constraint, [1] are enforced.
 
-Two of the three legs of FBP [2] also hold for Vyzzi:
+The three legs of FBP [2] also hold for Vyzzi:
 
-- True: asynchronous processes
-- False: data packets (IPs) with a lifetime of their own
-- True: external definition of connections
+- asynchronous processes
+- data packets (IPs) with a lifetime of their own
+- external definition of connections
 
 #### Data packets (IPs) with a lifetime of their own
 
-Enforcing IPs with their own lifetime offers the guarantee that a single IP is
-not simultaneously consumed in two processes. This guarantee is rendered
-meaningless in Vyzzi as it maps an FBP process to a Unix system process and an
-FBP connection to a Unix pipe. Because of this system-level isolation, unlike
-traditional cFBP implementations, the content, rather than the "handle", of an
-IP is copied.
+Technically there is a lifetime for each IP. However, for a component that is
+not FBP-aware (i.e. Vyzzi provides a wrapper that marshals data between the FBP
+world and the Unix world), the IP is created on sending and destroy on
+receiving.
 
-The implication is that a component has no explicit way to create or destroy an
-IP. A data packet is simply "created" when sent by a component and "destroyed"
-when received.
-
-#### Bounded buffer in connections
-
-Vyzzi connection buffer is not bounded. Practically, they are bounded by the
-buffer size of a Unix pipe on the machine. In that sense, it does honor the
-bounded buffer feature of cFBP so that processes do block, but the buffer size
-is not configurable at the application level.
-
-The benefit of configurable buffer size is for the network developer to set the
-degree of coupling between processes depending on system resources. Vyzzi
-targets modern server-grade machines (see the section "Goals and non-goals"
-above) and assumes that the operating system is configured to run the software
-in question optimally.
+This does not violate FBP principles, but may be "awkward" to some that an IP
+in between two FBP-unaware components does not travel anywhere else.
 
 #### Tree structures
 
-The benefit of tree structures in cFBP is to pass multiple IPs as one IP in a
-bounded connection. In Vyzzi, we cannot pass just the handle of a tree of IPs
-between processes as each process is a Unix system process.
+Implementing tree structures is non-trivial while respecting Unix semantics.
+This has not been implemented in Vyzzi.
+
+*TODO* Provide an Issue.
 
 ## Component specification
 
