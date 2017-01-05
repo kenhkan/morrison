@@ -467,6 +467,92 @@ An FBP-aware component designates itself as such by setting the attribute
 data marshalling enabled by `elementary.expectations` are ignored given that
 the component has volunteered to take control.
 
+Each IP is implemented as a file under the hood, and its path is passed around
+in a connection. Because each IP path is unique, comparing the IP path gives
+you the ability to compare two IP identities, while `diff`ing between two IP
+paths gives you the ability to compare two sets of IP data.
+
+### The SDK
+
+Each process is given the following environment variables which are paths to
+commands.
+
+#### `VYZZI_SDK_VERSION`
+
+This prints to stdout the version of the Vyzzi installation.
+
+#### `VYZZI_SDK_IP_CREATE`
+
+This creates an IP and prints its path to stdout. Write content to the file
+pointed to by the path before sending it.
+
+Even though you can also writes to a new file at an arbitrary path yourself,
+*always* use this as Vyzzi handles buffering and the garbage collection of the
+files. Using an arbitrary file will very likely lead to unexpected results.
+
+For example:
+
+```sh
+IP="$($VYZZI_SDK_IP_CREATE)"
+echo "content!" >$IP
+```
+
+### `VYZZI_SDK_IP_SEND <port-name> [<subport-index>]`
+
+Since a connection is just a line-delimitered stream, this is in essense an
+`echo` that takes from stdin.
+
+This is a convenient SDK command for raw IP handling. Instead of receiving IPs
+from I/O streams which are addressed with integers, this provides port
+name-based addressing.
+
+For example:
+
+```sh
+IP=$($VYZZI_SDK_IP_CREATE)
+echo "content!" >$IP
+echo $IP | $VYZZI_SDK_IP_SEND OUT
+```
+
+### `VYZZI_SDK_IP_RECEIVE <count> <port-name> [<port-index>]`
+
+Like `VYZZI_SDK_IP_SEND`, but for receiving. It returns `<count>` number of
+IPs. Normally you want `1`. Give it a `0` to receive until the connection is
+closed. i.e. You get all the IPs.
+
+If there are sub-ports, provide its address via `<port-index>`. It defaults to
+`1`.
+
+### `VYZZI_SDK_IP_OPEN_BRACKET`
+
+Some components need to send/receive an open bracket. This variable contains
+the IP path of an open bracket.
+
+### `VYZZI_SDK_IP_CLOSE_BRACKET`
+
+Like `VYZZI_SDK_IP_OPEN_BRACKET`, but for close bracket.
+
+## Command-line tools
+
+*TODO*
+
+## Internals
+
+### IP handling
+
+An IP is saved as a file on the filesystem. IP files are set to read-only so
+that it's immutable. This is in line with FBP philosophy that once an IP is
+created, it exists with its own lifetime, until destroyed.
+
+A potentially frustrating problem is that of memory leak. A process that
+receives a lot of IPs but do not drop them in a long-running program can be
+problematic. Vyzzi does not attempt to solve this problem since it has been a
+long tradition in the FBP community to require components to explicitly drop
+IPs when they are not needed.
+
+In Vyzzi, the wrapper around an FBP-unaware program automatically drop received
+IPs. Caution must be taken when implementing FBP-aware components.
+
 ### Ports
 
 An FBP-unaware component simply reads from I/O streams. Its FBP-aware
@@ -507,80 +593,6 @@ descriptor 2, and so on.
 The component would read from this file, whose path is provided as
 `VYZZI_PORT_MAP_PATH`, and a just simple lookup is required to accomplish
 reading by port name.
-
-### The SDK
-
-Each process is given the following environment variables which are paths to
-commands.
-
-#### `VYZZI_SDK_IP_CREATE`
-
-This creates an IP and prints its path to stdout. Write content to the file
-pointed to by the path before sending it.
-
-Even though you can also writes to a new file to an arbitrary path yourself,
-*always* use this as Vyzzi handles buffering and the garbage collection of the
-files. Using an arbitrary file will very likely lead to unexpected results.
-
-For example:
-
-```sh
-IP="$($VYZZI_SDK_IP_CREATE)"
-echo "content!" >$IP
-```
-
-### `VYZZI_SDK_IP_SEND <port-name> <IP-path>`
-
-Since a connection is just a line-delimitered stream, this is in essense an
-`echo`.
-
-This is a convenient SDK command for raw IP handling. Instead of receiving IPs
-from I/O streams which are addressed with integers, this provides port
-name-based addressing.
-
-For example:
-
-```sh
-IP=$($VYZZI_SDK_IP_CREATE)
-echo "content!" >$IP
-VYZZI_SDK_IP_SEND OUT $IP
-```
-
-### `VYZZI_SDK_IP_RECEIVE <port-name>`
-
-Like `VYZZI_SDK_IP_SEND`, but for receiving. It returns an IP path. Because
-each IP is unique, simply comparing the IP path gives you IP-equality property,
-while `diff`ing between two IP paths gives you content-equality property.
-
-### `VYZZI_SDK_IP_OPEN_BRACKET`
-
-Some components need to send/receive an open bracket. This variable contains
-the IP path of an open bracket.
-
-### `VYZZI_SDK_IP_CLOSE_BRACKET`
-
-Like `VYZZI_SDK_IP_OPEN_BRACKET`, but for close bracket.
-
-## Command-line tools
-
-*TODO*
-
-## Internals
-
-### IP handling
-
-An IP is saved as a file on the filesystem. IP files are set to read-only so
-that it's immutable. This is in line with FBP philosophy that once an IP is
-created, it exists with its own lifetime, until destroyed.
-
-A potentially frustrating problem is that of memory leak. A process that
-receives a lot of IPs but do not drop them in a long-running program can be
-problematic. Vyzzi does not attempt to solve this problem since it has been a
-long tradition in the FBP community to require components to explicitly drop
-IPs when they are not needed.
-
-In Vyzzi, the wrapper around an FBP-unaware program automatically drop received
-IPs. Caution must be taken when implementing FBP-aware components.
 
 ## Contributing
 
