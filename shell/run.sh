@@ -14,7 +14,7 @@ source $DIR/shell.sh
 
 >&2 echo "----> Vyzzi version: ${VYZZI_SDK_VERSION}."
 
->&2 echo "----> Starting $WRAPPER..."
+>&2 echo "----> Starting: '$(realpath $WRAPPER)'"
 source $WRAPPER
 
 >&2 echo "----> Exiting Vyzzi shell."

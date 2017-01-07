@@ -14,12 +14,12 @@ if [[ "$RECEIVE_COUNT" -ne "$RECEIVE_COUNT" ]]; then
   exit 6
 fi
 
->&2 echo "----> Receiving IP..."
+if [[ -z $PORT_MAP ]]; then
+  >&2 echo "Port map file not found"
+  exit 7
+fi
 
 RECEIVE_ALL=false
-# TODO: stub for testing.
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PORT_MAP=$DIR/sample_ports.tsv
 
 if [[ $RECEIVE_COUNT -eq 0 ]]; then
   RECEIVE_ALL=true
@@ -41,11 +41,11 @@ fi
 PORT_ADDRESS=$(( $PORT_STARTING + $PORT_INDEX - 1 ))
 
 if $RECEIVE_ALL; then
-  eval "echo <&$PORT_ADDRESS"
+  cat <&$PORT_ADDRESS
 else
   for i in $(seq 1 $RECEIVE_COUNT); do
     read IP
     [[ $? -ne 0 ]] && exit 4
     echo $IP
-  done
+  done <&$PORT_ADDRESS
 fi

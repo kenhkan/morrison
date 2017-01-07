@@ -3,10 +3,10 @@
 PORT_NAME=$1
 PORT_INDEX=$2
 
->&2 echo "----> Sending IP..."
-
-# TODO: stub for testing.
-PORT_MAP=shell/sample_ports.tsv
+if [[ -z $PORT_MAP ]]; then
+  >&2 echo "Port map file not found"
+  exit 4
+fi
 
 if [[ -z $PORT_INDEX ]]; then
   PORT_INDEX=1
@@ -23,4 +23,4 @@ fi
 
 PORT_ADDRESS=$(( $PORT_STARTING + $PORT_INDEX - 1 ))
 
-eval "echo <&$PORT_ADDRESS"
+cat >&$PORT_ADDRESS
