@@ -15,8 +15,8 @@ network (i.e. a program in FBP) on a single Unix-like machine. It:
 For those looking for:
 
 - [what Vyzzi aims at solving](#goals-and-non-goals).
-- [how Vyzzi is different from FBP](#differences-from-classical-fbp-cfbp).
 - [creating a component](#component-specification).
+- [manual handling of IPs](#manual-handling-of-ips).
 - [sharing a component](#sharing-the-component).
 - [contributing to Vyzzi](#contributing).
 - [requesting for a feature](#personas).
@@ -40,58 +40,11 @@ performance. The use of Unix processes and Unix IPC makes Vyzzi relatively
 inefficient compared to a framework designed in a specific language. The
 advantage is that existing programs can readily turn into components and teams
 with different preferences on technology choices can collaborate without tight
-coupling between different parts of the system.
+coupling of technology choice between different parts of the system.
 
 There is a single machine assumption. Parallelism is a non-trivial topic and is
 best tackled at a different level on top of Vyzzi. Vyzzi is only concerned with
 coordinating interdependent parts of a piece of software on a single machine.
-
-### Differences from classical FBP (cFBP)
-
-Vyzzi is inspired by cFBP but diverges from some of its rules highlighted in
-the sub-sections below.
-
-Note that despite the following differences, the two major constraints of FBP,
-the flow constraint and the order-preserving constraint, [1] are enforced for
-this to work as a valid FBP implementation.
-
-Two of the three legs of FBP [2] also hold for Vyzzi:
-
-- True: asynchronous processes
-- False: data packets (IPs) with a lifetime of their own
-- True: external definition of connections
-
-#### Data packets (IPs) with a lifetime of their own
-
-Enforcing IPs with their own lifetime offers the guarantee that a single IP is
-not simultaneously consumed in two processes. This guarantee is rendered
-meaningless in Vyzzi as it maps an FBP process to a Unix system process and an
-FBP connection to a Unix pipe. Because of this system-level isolation, unlike
-traditional cFBP implementations, the content, rather than the "handle", of an
-IP is copied.
-
-The implication is that a component has no explicit way to create or destroy an
-IP. A data packet is simply "created" when sent by a component and "destroyed"
-when received.
-
-#### Bounded buffer in connections
-
-Vyzzi connection buffer is not bounded. Practically, they are bounded by the
-buffer size of a Unix pipe on the machine. In that sense, it does honor the
-bounded buffer feature of cFBP so that processes do block, but the buffer size
-is not configurable at the application level.
-
-The benefit of configurable buffer size is for the network designer to set the
-degree of coupling between processes depending on system resources. Vyzzi
-targets modern server-grade machines (see the section "Goals and non-goals"
-above) and assumes that the operating system is configured to run the software
-in question optimally.
-
-#### Tree structures
-
-The benefit of tree structures in cFBP is to pass multiple IPs as one IP in a
-bounded connection. In Vyzzi, we cannot pass just the handle of a tree of IPs
-between processes as each process is a Unix system process.
 
 ## Component specification
 
@@ -102,6 +55,27 @@ but they all belong in a single manifest file in practice.
 
 A manifest file is written in [YAML](http://yaml.org/) for its maturity,
 human-friendliness, and support for comments.
+
+### Versioning
+
+There must be a version designation in the manifest file:
+
+```yaml
+version: <an integer>
+```
+
+The version is only an incrementing integer. Version is incremented when there
+is a backward-incompatible change.
+
+For simplicity for the users, not only is this the version for the manifest, it
+is also the version of the compiler, runtime, and the command line tools. In
+other words, whenever there is *ANY backward-incompatible change* across the
+stack, be it an attribute name in the manifest, the expected behavior of the
+compiler, or what the runtime provides as its interface, the version is
+incremented.
+
+Employing a monolithic versioning approach couples the different layers
+together but removes the confusion of where the change might have been.
 
 ### Inter-component communication
 
@@ -119,25 +93,20 @@ connection pass through a designated port. Each FBP port however is designated
 as an input port or an output port when the component is designed; in contrast,
 a TCP port can be used both to send and to receive.
 
-In cFBP, IPs are explicitly created or destroyed by a component. In Vyzzi,
-there is an open-world assumption that components are not expected to "know"
-that they are in the Vyzzi world. Coupled with that all data transmitted across
-the network are copied, this assumption leads to the design choice for Vyzzi to
-implicit create and destroy IPs on behalf of the component.
-
-For Vyzzi to manage the IPs, it needs to understand the delimiting convention
-that a particular component uses. Vyzzi requires the component to specify how
-it sends and receives its data, by specifying the `ports` section in the
-component manifest.
+Input and output ports have distinct namespaces. That is, an input and an
+output port may share the same name. Port names may contain alphanumeric
+characters and dashes and is case-insensitive. Vyzzi compiles port names into
+integer values (Unix file descriptors) for execution.
 
 ```yaml
 ports:
   input | output:
     <port name>:
-      grouping-type: none | flat | hierarchical
-      close-packet: <array of bytes>
-      open-bracket: <array of bytes>
-      close-bracket: <array of bytes>
+      delimitering:
+        grouping-type: none | flat | hierarchical
+        close-packet: <array of bytes>
+        open-bracket: <array of bytes>
+        close-bracket: <array of bytes>
 ```
 
 For example:
@@ -146,35 +115,50 @@ For example:
 ports:
   input:
     one-inport-name:
-      grouping-type: flat
-      # CSV
-      close-packet: [44] # Comma
-      open-bracket: []
-      close-bracket: [10] # Newline
+      delimitering:
+        grouping-type: flat
+        # CSV
+        close-packet: [44] # Comma
+        open-bracket: []
+        close-bracket: [10] # Newline
     another-inport-name:
-      grouping-type: hierarchical
-      # Parenthesized list
-      close-packet: [44] # Comma
-      open-bracket: [40] # Open parenthesis
-      close-bracket: [41] # Close parenthesis
+      delimitering:
+        grouping-type: hierarchical
+        # Parenthesized list
+        close-packet: [44] # Comma
+        open-bracket: [40] # Open parenthesis
+        close-bracket: [41] # Close parenthesis
     yet-another-inport-name:
-      grouping-type: none
-      # Unix style: each line is an IP.
-      close-packet: [10] # Newline
-      open-bracket: []
-      close-bracket: []
+      delimitering:
+        grouping-type: none
+        # Unix style: each line is an IP.
+        close-packet: [10] # Newline
+        open-bracket: []
+        close-bracket: []
   output:
     an-outport-name:
-      grouping-type: flat
-      # Multi-byte delimiters
-      close-packet: [255, 12] # East Asian character comma in UTF-16
-      open-bracket: []
-      close-bracket: [48, 2] # East Asian character period in UTF-16
+      delimitering:
+        grouping-type: flat
+        # Multi-byte delimiters
+        close-packet: [255, 12] # East Asian character comma in UTF-16
+        open-bracket: []
+        close-bracket: [48, 2] # East Asian character period in UTF-16
 ```
 
-In the manifest, each port corresponds to a set of delimiter definitions: its
-grouping type, packet closing delimiter, bracket opening delimiter, and bracket
-closing delimiter. The available delimitering types are:
+#### Delimitering
+
+In cFBP, IPs are explicitly created or destroyed by a component. In Vyzzi,
+there is an open-world assumption that components are not expected to "know"
+that they are in the Vyzzi world. This leads to the design choice for Vyzzi to
+implicit create and destroy IPs on behalf of the component.
+
+Delimitering only applies to elementary components with `ip-handling` set to
+`automatic`. See the section [Elementary component
+specification](#elementary-component-specification) for more info.
+
+Delimitering requires four configurations: its grouping type, packet closing
+delimiter, bracket opening delimiter, and bracket closing delimiter. The
+available delimitering types are:
 
 - `none`: The stream consists of packets separated by some delimiter but
   there is only one level. It is useful for a component that only cares about
@@ -197,7 +181,7 @@ not care about the character encoding. At compile time, Vyzzi matches the
 delimiter specification of the two ports in each connection. If they do not
 agree, Vyzzi would insert an adapter to convert one to another.
 
-### Delimiter conversion rules
+##### Delimiter conversion rules
 
 Conversion may go with any one of three ways:
 
@@ -208,7 +192,7 @@ Conversion may go with any one of three ways:
    (most likely a `flat`) to a component that expects a symbolically JSON
    structure (a `hierarchical`).
 3. From a "higher" type to a "lower" type. Think symbolic JSON to CSV, the
-   oppposite of the previous example.
+   opposite of the previous example.
 
 There is no surprise on the first kind of conversions. It's a simple map from
 one set of delimiter to another.
@@ -218,15 +202,15 @@ because `flat` does not require brackets anyway. Going from `flat` to
 `hierarchical` is disallowed because of the ambiguity of whether and where to
 insert the open brackets.
 
-The third one is equally tricky. For conversion from either `hierarchical` or
-`flat` to `none`, the conversion is simple as Vyzzi can simply drop all
-brackets. For `hierarchical` to `flat`, it's disallowed because of disambiguity
-in the semantics of the output.
+For conversion from either `hierarchical` or `flat` to `none`, the conversion
+is simple as Vyzzi can simply drop all brackets. For `hierarchical` to `flat`,
+it's disallowed because of disambiguity in the semantics of the output.
 
 To achieve the disallowed conversion types, insert a component in between the
-two that would perform the correct marshalling behavior.
+two that would perform the correct marshalling behavior. Alternatively, write
+your own [wrapper](#manual-handling-of-ips) for the program.
 
-#### The responsibility of Vyzzi in delimiter conversion
+##### The responsibility of Vyzzi in delimiter conversion
 
 There are some structures that cannot be expressed with this delimitering
 specification. For instance, proper CSV cannot be expressed as it allows
@@ -240,7 +224,7 @@ only to fully honor the FBP concept of an Information Packet. And it is
 certainly not Vyzzi's job to impose a particular world view onto how all
 components should communicate.
 
-This is a design decision that the network designer needs to make. For the CSV
+This is a design decision that the network developer needs to make. For the CSV
 example above, a possible approach would be to have a CSV parser that takes a
 connection in which each IP is the content of a CSV file, and outputs the
 constituent parts in individual IPs delimitered by something other than commas
@@ -248,23 +232,16 @@ and newlines. For this to work, the receiving component would need to expect
 delimiters other than commas and newlines as well, though the delimiters need
 not be the same as those used by the sending component.
 
-In other words, the designer of each individual component chooses its own set
-of delimiters, knowing that they do not conflict with the content of the IPs.
-Vyzzi only takes care of matching the delimiter sets, but not what those sets
-are.
+In other words, the developer of each individual component is responsible of
+its own set of delimiters, knowing that they do not conflict with the content
+of the IPs.  Vyzzi only takes care of matching the delimiter sets.
 
-#### Where is open packet?
+##### Where is open packet?
 
 There is a `close-packet` but not a `open-packet`. Vyzzi assumes that all data
-in a connection to be well-formed. And so once a packet has closed, a bracket
-has closed, or the connection has just been opened, it assumes that the
-upcoming data is part of a packet.
-
-#### Port names
-
-Input and output ports have distinct namespaces. Port names may contain
-alphanumeric characters and dashes. Vyzzi compiles port names into integer
-values (Unix file descriptors) for execution.
+in a connection to be well-formed. Once a packet has closed, a bracket has
+closed, or the connection has just been opened, it assumes that the upcoming
+data is part of a packet.
 
 ### Elementary component specification
 
@@ -281,7 +258,6 @@ For elementary components, Vyzzi needs six questions answered:
 
 ```yaml
 elementary:
-  terminate: on-exit | on-error
   source:
     protocol: git | http
     url: <URL to source>
@@ -291,10 +267,13 @@ elementary:
     nix | mac | freebsd | ubuntu | centos: <build command to run in the specified operating systems>
     <... more OS build definitions ...>
   path: <path to the program to run after building, relative to the working directory>
-  environment-variables: <an associative array of case insensitive names to case sensitive names>
-  parameters: <an array of case insensitive names>
-  input-streams: <an array of case insensitive names>
-  output-streams: <an array of case insensitive names>
+  ip-handling: automatic | raw
+  expectations:
+    terminate: never | on-error
+    environment-variables: <an associative array of case insensitive names to case sensitive names>
+    parameters: <an array of case insensitive names>
+    input-streams: <an array of case insensitive names>
+    output-streams: <an array of case insensitive names>
 ```
 
 ##### Building
@@ -320,7 +299,7 @@ defined by `working-directory` in the `source` section. The order is always
 from the more general label to the more specific label. `unix-like` always runs first
 for all Unix-like hosts.
 
-If any of the build commands exits with a non-zero status code, the network
+If any of the build commands exits with a non-zero status code, the component
 would fail to compile.
 
 ##### I/O
@@ -340,8 +319,8 @@ deactivated process has finished running but may be activated again on incoming
 IPs, whereas a terminated process has ended execution for good and will never
 be started again, until the network is initiated again.
 
-In Vyzzi, by default, a process is always terminated when the internal logic
-returns with any exit code. That is, `terminate` is set to `on-exit`.
+In Vyzzi, by default, a process is always deactivated when the internal logic
+returns with any exit code. That is, `terminate` is set to `never`.
 
 To implement a component that deactivates rather than terminates upon exiting,
 set the property `terminate` to `on-error`. A process which is set to terminate
@@ -352,6 +331,21 @@ upstream processes have terminated.
 If an `_on-termination_` output port is attached to a process, the exit code of
 the source process is sent in an IP to the corresponding target process when
 the source process terminates.
+
+#### Automatic IP handling
+
+A primary principle of Vyzzi is to not require elementary components to be
+FBP-aware. This inclusive principle allows Vyzzi to leverage as much
+well-written and already battle-tested software into the FBP world as possible.
+
+For these FBP-unaware components, Vyzzi marshalls data between the FBP world
+and the Unix world. For an FBP-aware component, Vyzzi naturally relies on the
+component to handle the data at a lower level. See the section [Manual handling
+of IPs](#manual-handling-of-ips) for more information on how to write such a
+component.
+
+A process is always terminated when all its upstream processes have been
+terminated and that the process is deactivated.
 
 ### Composite component specification
 
@@ -460,44 +454,145 @@ browsing the registry.
 
 *TODO*
 
-## Special constructs
+## Manual handling of IPs
 
-Some FBP constructs are crucial, yet there may not be equivalent mappings to
-Unix pipes. It is therefore necessary for the program to "know" that it is a
-Vyzzi component to use these constructs.
+Sometimes the component developer does not want Vyzzi to automatically marshal
+data so that a Unix-like program just works. A scenario is when array ports are
+needed. The concept of array ports is unique to FBP, an equivalent to which
+does not exist in the Unix-like world. In that case, the developer must handle
+the IPs herself to leverage the feature.
 
-### Array ports
+An FBP-aware component designates itself as such by setting the attribute
+`elementary.ip-handling` to `raw`. A side-effect of this is that all automatic
+data marshalling enabled by `elementary.expectations` are ignored given that
+the component has volunteered to take control.
+
+Each IP is implemented as a file under the hood, and its path is passed around
+in a connection. Because each IP path is unique, comparing the IP path gives
+you the ability to compare two IP identities, while `diff`ing between two IP
+paths gives you the ability to compare two sets of IP data.
+
+### The SDK
+
+Each process is given the following environment variables which are paths to
+commands.
+
+#### `VYZZI_SDK_VERSION`
+
+This prints to stdout the version of the Vyzzi installation.
+
+#### `VYZZI_SDK_IP_CREATE`
+
+This creates an IP and prints its path to stdout. Write content to the file
+pointed to by the path before sending it.
+
+Even though you can also writes to a new file at an arbitrary path yourself,
+*always* use this as Vyzzi handles buffering and the garbage collection of the
+files. Using an arbitrary file will very likely lead to unexpected results.
+
+For example:
+
+```sh
+IP="$($VYZZI_SDK_IP_CREATE)"
+echo "content!" >$IP
+```
+
+### `VYZZI_SDK_IP_SEND <port-name> [<subport-index>]`
+
+Since a connection is just a line-delimitered stream, this is in essense an
+`echo` that takes from stdin.
+
+This is a convenient SDK command for raw IP handling. Instead of receiving IPs
+from I/O streams which are addressed with integers, this provides port
+name-based addressing.
+
+For example:
+
+```sh
+IP=$($VYZZI_SDK_IP_CREATE)
+echo "content!" >$IP
+echo $IP | $VYZZI_SDK_IP_SEND OUT
+```
+
+### `VYZZI_SDK_IP_RECEIVE <count> <port-name> [<port-index>]`
+
+Like `VYZZI_SDK_IP_SEND`, but for receiving. It returns `<count>` number of
+IPs. Normally you want `1`. Give it a `0` to receive until the connection is
+closed. i.e. You get all the IPs.
+
+If there are sub-ports, provide its address via `<port-index>`. It defaults to
+`1`.
+
+### `VYZZI_SDK_IP_OPEN_BRACKET`
+
+Some components need to send/receive an open bracket. This variable contains
+the IP path of an open bracket.
+
+### `VYZZI_SDK_IP_CLOSE_BRACKET`
+
+Like `VYZZI_SDK_IP_OPEN_BRACKET`, but for close bracket.
+
+## Command-line tools
+
+*TODO*
+
+## Internals
+
+### IP handling
+
+An IP is saved as a file on the filesystem. IP files are set to read-only so
+that it's immutable. This is in line with FBP philosophy that once an IP is
+created, it exists with its own lifetime, until destroyed.
+
+A potentially frustrating problem is that of memory leak. A process that
+receives a lot of IPs but do not drop them in a long-running program can be
+problematic. Vyzzi does not attempt to solve this problem since it has been a
+long tradition in the FBP community to require components to explicitly drop
+IPs when they are not needed.
+
+In Vyzzi, the wrapper around an FBP-unaware program automatically drop received
+IPs. Caution must be taken when implementing FBP-aware components.
+
+### Ports
+
+An FBP-unaware component simply reads from I/O streams. Its FBP-aware
+counterpart may also choose to do that, but it may also choose to select by
+port name rather than I/O stream. This is especially crucial for array ports.
 
 Array ports allow a process to selectively receive IPs from a number of
 "sub-ports" in a single port. A Unix program, however, cannot separate out data
 once it merges into a single stream accessible via a file descriptor.
 
-In Vyzzi, a component may use array ports by reading the environment variable
+An FBP-aware component may use array ports by reading the environment variable
 `VYZZI_PORT_MAP_PATH`. It is the path to a file that contains mapping for
 ports.
 
-#### Map file protocol
+#### Port map file protocol
 
 Each map file is tab-separated values of the following format:
 
 ```
-IN | OUT  <port name>   <list of file descriptors separated by comma>
+IN | OUT    <port name>    <starting file descriptor>    <file descriptor count>
 ```
 
-Note that the spaces above should be tabs in a real file.
+Note that the spaces above are tabs in practice.
 
 An example would be:
 
 ```
-IN  IN  0
-IN  ArrayPort-1  3,5,6,7
-OUT OUT 4
-IN  ArrayPort-2  8,9,10
-OUT NormalPort   4
+IN  IN  0   1
+IN  ArrayPort-1  2   4
+OUT OUT 6   1
+IN  ArrayPort-2  7   3
+OUT NormalPort   10  1
 ```
 
-A program can then read from this file and loop through the list to selectively
-read from a sub-port.
+There is one `IN` input port; `ArrayPort-1` has 4 sub-ports starting at file
+descriptor 2, and so on.
+
+The component would read from this file, whose path is provided as
+`VYZZI_PORT_MAP_PATH`, and a just simple lookup is required to accomplish
+reading by port name.
 
 ## Contributing
 
@@ -506,8 +601,8 @@ to create Github issues based on one of the [personas](#personas).
 
 ### A word on licensing
 
-The specification and the Vyzzi compiler, as located at
-https://github.com/kenhkan/vyzzi, is released under
+The Vyzzi specification, the compiler, the runtime, and the command-line tools,
+as located at https://github.com/kenhkan/vyzzi, is released under
 [AGPLv3](https://www.gnu.org/licenses/agpl-3.0.en.html).
 
 This means that modifying the Vyzzi compiler requires the modification to be
@@ -526,26 +621,26 @@ These personas are to be used when creating feature requests as Github issues
 so we know who the feature is catered to. It is highly encouraged to use Agile
 user story format of "As..., I want... so that...".
 
-### Matt
+#### Matt
 
 Matt is obsessed with performance. His solutions are not intuitive to most so
 they are difficult to maintain, but his creations are usually the most
 efficient solutions.
 
-### Mike
+#### Mike
 
 Mike is a frontend developer who is fanatical about beautiful and intuitive
 design. Perfection is a requirement. His obsession often leads to some of the
 most stunning user interfaces.
 
-### Raymond
+#### Raymond
 
 Just a genius developer. Everyone knows that if she needs a hard problem
 solved, Raymond is the person to ask. Given a problem, with somewhat (i.e. not
 necessarily perfectly) clear requirements, Raymond can consistently deliver
 unexpected results.
 
-### Ryan
+#### Ryan
 
 Ryan is a manager who is interested in technology but does not code. He learns
 how to code on his own to get some understanding of what he manages and
@@ -553,12 +648,12 @@ delivers but nonetheless remains largely outside of the development realm. It
 would delight him if there is a way he can be closer to his software's
 development without needing to be a software engineer.
 
-### Ken
+#### Ken
 
 A software engineer who just wants to get stuff done and doesn't want to worry
 about maintenance. Managed services are the best things since sliced bread.
 
-### Paul
+#### Paul
 
 A veteran engineer who is interested in applying Flow-Based Programming to
 advance modern-day computing.
@@ -634,7 +729,7 @@ sub-components. Also simply referred to as a "composite".
 
 ### Substream sensitivitiy
 
-A network designer may set a subnet as "substream sensitive" so that a
+A network developer may set a subnet as "substream sensitive" so that a
 substream going into the subnet is treated as a stream. That is, when there is
 a closing bracket coming from "outside" of the network, the stream is closed
 "inside" the network. See the chapter [Composite
